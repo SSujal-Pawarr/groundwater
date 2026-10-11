@@ -1,0 +1,85 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Large Data Files (Rule 36: Raw/Processed datasets must remain local/uncommitted)
+data/raw/*
+!data/raw/.gitkeep
+!data/raw/india/.gitkeep
+!data/raw/maharashtra/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/features/*
+!data/features/.gitkeep
+
+# Machine Learning Models & Caches
+*.pkl
+*.pickle
+*.joblib
+*.pt
+*.pth
+*.onnx
+*.h5
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints
+
+# IDE / Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing and Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+.env
+reports/
+scratch/
+
+# Local configuration and logs
+*.log
+
+# Python cache
+.mypy_cache/
+.ruff_cache/

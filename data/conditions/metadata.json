@@ -1,0 +1,32 @@
+{
+  "generated_at": "2026-10-04T05:09:19.108113Z",
+  "method_version": "M8.2-D-v1",
+  "artifacts": {
+    "india": {
+      "source_rows": 1569168,
+      "output_rows": 1569168,
+      "state_distribution": {
+        "INSUFFICIENT_HISTORY": 567112,
+        "NORMAL_RANGE": 401787,
+        "EXTREMELY_HIGH": 178781,
+        "EXTREMELY_LOW": 152704,
+        "HIGH": 136344,
+        "LOW": 132440
+      },
+      "path": "data/conditions/india_conditions.parquet"
+    },
+    "maharashtra": {
+      "source_rows": 218791,
+      "output_rows": 218791,
+      "state_distribution": {
+        "EXTREMELY_LOW": 76320,
+        "NORMAL_RANGE": 56148,
+        "INSUFFICIENT_HISTORY": 30492,
+        "LOW": 27787,
+        "EXTREMELY_HIGH": 16916,
+        "HIGH": 11128
+      },
+      "path": "data/conditions/maharashtra_conditions.parquet"
+    }
+  }
+}

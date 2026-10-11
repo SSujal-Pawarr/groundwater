@@ -1,0 +1,445 @@
+{
+  "version": "M17-FutureForecast-v1-chain",
+  "region": "india",
+  "label": "ESTIMATED_WITHOUT_RECENT_DATA",
+  "generated_at_utc": "2026-10-11T05:08:15.968710+00:00",
+  "data_through": "2024-05-10",
+  "requested_target_date": "2027-04-11",
+  "step_months": 6,
+  "data_gap_months": 35.0,
+  "step_model_single_step_test": {
+    "regression": {
+      "xgboost_regressor": {
+        "n": 169971,
+        "mae": 1.5939787901397977,
+        "rmse": 2.795440769786258,
+        "r2": 0.9240785848874027,
+        "r2_change": 0.4684308882971667,
+        "bias": 0.18711925791285255,
+        "skill_rmse_vs_persistence": 0.27363509810087183,
+        "skill_mae_vs_persistence": 0.3512403309423858,
+        "beats_persistence": true
+      },
+      "baseline_persistence": {
+        "n": 169971,
+        "mae": 2.456963442957552,
+        "rmse": 3.848535030364761,
+        "r2": 0.8561020547013598,
+        "r2_change": -0.0075115544779809085,
+        "bias": -0.33230382242139794
+      },
+      "baseline_median_change": {
+        "n": 169971,
+        "mae": 2.440748815207333,
+        "rmse": 3.83644370814185,
+        "r2": 0.8570048310443398,
+        "r2_change": -0.0011907026077617733,
+        "bias": -0.13230372705396634
+      }
+    },
+    "n_rounds": 297,
+    "top_features": {
+      "chg_s1": 0.3894900679588318,
+      "origin_month": 0.15984871983528137,
+      "cur_minus_exp_mean": 0.1315993070602417,
+      "chg_s3": 0.12549453973770142,
+      "exp_std": 0.02836953103542328,
+      "cur": 0.02701203152537346,
+      "lat": 0.023759353905916214,
+      "grp_mean": 0.022854575887322426
+    }
+  },
+  "step_model_classification": {
+    "xgboost_classifier": {
+      "n": 146979,
+      "accuracy": 0.4550309908218181,
+      "balanced_accuracy": 0.31318228379029284,
+      "macro_f1": 0.3086959023305719,
+      "ordinal_mae_classes": 0.8440525517250763,
+      "within_one_class": 0.7271106756747563,
+      "per_class_f1": {
+        "EXTREMELY_LOW": 0.27472214306070103,
+        "LOW": 0.14952881037660395,
+        "NORMAL_RANGE": 0.594642949898134,
+        "HIGH": 0.12174172086788143,
+        "EXTREMELY_HIGH": 0.4028438874495391
+      },
+      "support": {
+        "EXTREMELY_LOW": 27933,
+        "LOW": 23204,
+        "NORMAL_RANGE": 59188,
+        "HIGH": 17058,
+        "EXTREMELY_HIGH": 19596
+      },
+      "confusion_matrix_rows_true_cols_pred": [
+        [
+          5302,
+          1463,
+          20231,
+          148,
+          789
+        ],
+        [
+          2196,
+          2150,
+          18050,
+          149,
+          659
+        ],
+        [
+          2333,
+          1517,
+          51516,
+          924,
+          2898
+        ],
+        [
+          392,
+          236,
+          12638,
+          1226,
+          2566
+        ],
+        [
+          443,
+          187,
+          11644,
+          636,
+          6686
+        ]
+      ]
+    },
+    "baseline_persistence_state": {
+      "n": 146979,
+      "accuracy": 0.3623034583171746,
+      "balanced_accuracy": 0.30620806651275445,
+      "macro_f1": 0.31166958684557367,
+      "ordinal_mae_classes": 0.9777859422094313,
+      "within_one_class": 0.7298525639717238,
+      "per_class_f1": {
+        "EXTREMELY_LOW": 0.3076371602110923,
+        "LOW": 0.23232778027915355,
+        "NORMAL_RANGE": 0.4921607742286955,
+        "HIGH": 0.20357729197269506,
+        "EXTREMELY_HIGH": 0.32264492753623186
+      },
+      "support": {
+        "EXTREMELY_LOW": 27933,
+        "LOW": 23204,
+        "NORMAL_RANGE": 59188,
+        "HIGH": 17058,
+        "EXTREMELY_HIGH": 19596
+      },
+      "confusion_matrix_rows_true_cols_pred": [
+        [
+          7724,
+          7188,
+          10307,
+          1683,
+          1031
+        ],
+        [
+          4646,
+          5934,
+          10127,
+          1571,
+          926
+        ],
+        [
+          7356,
+          10962,
+          30716,
+          6398,
+          3756
+        ],
+        [
+          1310,
+          1988,
+          7758,
+          3534,
+          2468
+        ],
+        [
+          1246,
+          1807,
+          6725,
+          4475,
+          5343
+        ]
+      ]
+    },
+    "baseline_rule_on_regressor_output": {
+      "n": 146979,
+      "accuracy": 0.4238292545193531,
+      "balanced_accuracy": 0.3485681508553199,
+      "macro_f1": 0.3514959696227452,
+      "ordinal_mae_classes": 0.9004075412133706,
+      "within_one_class": 0.7370644785989835,
+      "per_class_f1": {
+        "EXTREMELY_LOW": 0.2448461618149798,
+        "LOW": 0.28555720994158745,
+        "NORMAL_RANGE": 0.563332718475531,
+        "HIGH": 0.2845822475136946,
+        "EXTREMELY_HIGH": 0.37916151036793333
+      },
+      "support": {
+        "EXTREMELY_LOW": 27933,
+        "LOW": 23204,
+        "NORMAL_RANGE": 59188,
+        "HIGH": 17058,
+        "EXTREMELY_HIGH": 19596
+      },
+      "confusion_matrix_rows_true_cols_pred": [
+        [
+          4727,
+          5390,
+          14297,
+          2424,
+          1095
+        ],
+        [
+          1539,
+          6233,
+          12473,
+          2028,
+          931
+        ],
+        [
+          2983,
+          6204,
+          39702,
+          6904,
+          3395
+        ],
+        [
+          696,
+          1323,
+          7855,
+          5351,
+          1833
+        ],
+        [
+          734,
+          1301,
+          7439,
+          3841,
+          6281
+        ]
+      ]
+    },
+    "baseline_majority_class": {
+      "n": 146979,
+      "accuracy": 0.40269698392287334,
+      "balanced_accuracy": 0.2,
+      "macro_f1": 0.11483506089723379,
+      "ordinal_mae_classes": 0.9206757427931881,
+      "within_one_class": 0.6766272732839386,
+      "per_class_f1": {
+        "EXTREMELY_LOW": 0.0,
+        "LOW": 0.0,
+        "NORMAL_RANGE": 0.5741753044861689,
+        "HIGH": 0.0,
+        "EXTREMELY_HIGH": 0.0
+      },
+      "support": {
+        "EXTREMELY_LOW": 27933,
+        "LOW": 23204,
+        "NORMAL_RANGE": 59188,
+        "HIGH": 17058,
+        "EXTREMELY_HIGH": 19596
+      },
+      "confusion_matrix_rows_true_cols_pred": [
+        [
+          0,
+          0,
+          27933,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          23204,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          59188,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          17058,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          19596,
+          0,
+          0
+        ]
+      ],
+      "class": "NORMAL_RANGE"
+    },
+    "top_features": {
+      "pred_pct": 0.3937292695045471,
+      "cur_pct": 0.1339607536792755,
+      "cur_minus_grp_mean": 0.12943121790885925,
+      "cur_minus_exp_mean": 0.04156462475657463,
+      "pred_level": 0.03683176636695862,
+      "lat": 0.034020956605672836,
+      "target_month": 0.025747789070010185,
+      "origin_month": 0.02179691381752491
+    },
+    "n_rounds": 108,
+    "label_definition": "Condition state (P10/P25/P75/P90, same thresholds as M8.2-D) of the ACTUAL future value relative to the site's own history known at the forecast origin (same analytical season)."
+  },
+  "chain_backtest": {
+    "cutoff": "2020-01-01",
+    "max_backtested_steps": 4,
+    "by_steps": {
+      "1": {
+        "evaluable": true,
+        "months_ahead": 6,
+        "chain": {
+          "n": 71242,
+          "mae": 1.603444317767362,
+          "rmse": 2.8034374845868766,
+          "r2": 0.9237236443329389,
+          "bias": 0.08499288203710041
+        },
+        "persistence": {
+          "n": 71242,
+          "mae": 2.4606946464650914,
+          "rmse": 3.8549739639704472,
+          "r2": 0.8557715017102763,
+          "bias": -0.3249864962993968
+        },
+        "rmse_skill_vs_persistence": 0.2727739510594609,
+        "resid_q10": -2.4689516115188597,
+        "resid_q90": 2.2253130273818966,
+        "pers_resid_q10": -3.3999996185302734,
+        "pers_resid_q90": 3.9999999523162844
+      },
+      "2": {
+        "evaluable": true,
+        "months_ahead": 12,
+        "chain": {
+          "n": 79333,
+          "mae": 2.4915106165436507,
+          "rmse": 3.913229315850984,
+          "r2": 0.8483034870321035,
+          "bias": -1.4607000369349343
+        },
+        "persistence": {
+          "n": 79333,
+          "mae": 1.6846524187683416,
+          "rmse": 3.3890111008066617,
+          "r2": 0.8862239154989126,
+          "bias": -0.24015264833926478
+        },
+        "rmse_skill_vs_persistence": -0.1546817639279925,
+        "resid_q10": -1.586084108293057,
+        "resid_q90": 4.953338521957399,
+        "pers_resid_q10": -2.1000000476837157,
+        "pers_resid_q90": 2.6000007629394517
+      },
+      "3": {
+        "evaluable": true,
+        "months_ahead": 18,
+        "chain": {
+          "n": 51864,
+          "mae": 1.8845659208594299,
+          "rmse": 3.2166793277584036,
+          "r2": 0.8925190938143978,
+          "bias": -0.10145572145749428
+        },
+        "persistence": {
+          "n": 51864,
+          "mae": 2.644489628323648,
+          "rmse": 4.113652707807,
+          "r2": 0.824219364156477,
+          "bias": -0.5288575889157987
+        },
+        "rmse_skill_vs_persistence": 0.21804791112927357,
+        "resid_q10": -2.7083838653564456,
+        "resid_q90": 2.885244054257874,
+        "pers_resid_q10": -3.3999996185302734,
+        "pers_resid_q90": 4.499999904632569
+      },
+      "4": {
+        "evaluable": true,
+        "months_ahead": 24,
+        "chain": {
+          "n": 51577,
+          "mae": 2.6985034772195116,
+          "rmse": 4.036488009627431,
+          "r2": 0.836374551067614,
+          "bias": -1.5701876030503232
+        },
+        "persistence": {
+          "n": 51577,
+          "mae": 1.8035442170152993,
+          "rmse": 3.3728696036465005,
+          "r2": 0.8857535745604417,
+          "bias": -0.2958617215765539
+        },
+        "rmse_skill_vs_persistence": -0.19675187124443672,
+        "resid_q10": -1.7467801418304438,
+        "resid_q90": 5.39,
+        "pers_resid_q10": -2.2499998855590824,
+        "pers_resid_q90": 2.9000000953674316
+      }
+    },
+    "note": "Backtest trains on data before the cutoff and chains forward from origins after it; interval widths beyond the backtested steps are extrapolated with sqrt(k/K) (assumption)."
+  },
+  "forecast_artifact": {
+    "file": "data/future_forecast/india_chained_forecast.parquet",
+    "sites_total": 40841,
+    "sites_forecast": 27124,
+    "sites_excluded_too_many_steps": 13717,
+    "steps_distribution": {
+      "6": 22909,
+      "7": 3007,
+      "8": 1208
+    },
+    "method_counts": {
+      "chained_xgboost": 3007,
+      "persistence_fallback": 24117
+    },
+    "method_by_steps": {
+      "6": [
+        "persistence_fallback",
+        "chained model did not beat persistence in the backtest (RMSE skill -19.7% at 4 step(s) = 24 months)"
+      ],
+      "7": [
+        "chained_xgboost",
+        "backtest RMSE skill vs persistence = +21.8% at 3 step(s) (18 months)"
+      ],
+      "8": [
+        "persistence_fallback",
+        "chained model did not beat persistence in the backtest (RMSE skill -19.7% at 4 step(s) = 24 months)"
+      ]
+    },
+    "monsoon_months_in_training_data": true,
+    "predicted_state_distribution": {
+      "NORMAL_RANGE": 11118,
+      "INSUFFICIENT_HISTORY": 9292,
+      "EXTREMELY_HIGH": 3098,
+      "HIGH": 2066,
+      "EXTREMELY_LOW": 822,
+      "LOW": 728
+    }
+  },
+  "caveats": [
+    "Rough estimate produced by feeding the model its own predictions; errors compound with every step.",
+    "No information after the data end (rainfall, pumping, recharge) is used.",
+    "Probabilities/classes are computed on the point forecast of the last step and understate multi-step uncertainty."
+  ]
+}

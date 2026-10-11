@@ -1,0 +1,23 @@
+# Foundation dependencies for India-wide Groundwater Intelligence Platform
+# Core data handling & numerical processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Configuration & Environment Management
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+
+# Testing & Verification
+pytest>=8.0.0
+
+# API Dependencies
+fastapi>=0.100.0
+uvicorn>=0.23.0
+duckdb>=0.9.0
+
+# Future forecasting (M17): XGBoost regressor + future-state classifier
+xgboost>=2.0.0
+scikit-learn>=1.3.0
+scipy>=1.10.0
+pyarrow>=14.0.0
+httpx>=0.24.0

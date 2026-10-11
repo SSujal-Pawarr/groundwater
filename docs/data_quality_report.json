@@ -1,0 +1,91 @@
+{
+  "pipeline_version": "1.0.0",
+  "timestamp_utc": "2026-10-02T19:20:24Z",
+  "execution_time_seconds": 27.75,
+  "india_summary": {
+    "total_input_rows": 1569168,
+    "total_output_rows": 1569168,
+    "analytics_ready_rows": 1542448,
+    "analytics_ready_pct": 98.3,
+    "excluded_from_analytics": 26720,
+    "files_breakdown": {
+      "output1final.csv": 389154,
+      "output2final.csv": 112737,
+      "output3final.csv": 120021,
+      "output4final.csv": 196895,
+      "outputfinal5.csv": 363147,
+      "outputfinal6.csv": 387214
+    },
+    "unique_candidate_sites": 41069,
+    "date_range": {
+      "min": "1994-01-01",
+      "max": "2024-05-10",
+      "unique_dates": 3611
+    },
+    "quality_flag_counts": {
+      "LABEL_PROVENANCE_UNVERIFIED": 1569168,
+      "COORDINATE_INVERTED_CORRECTED": 389154,
+      "CONFLICTING_DUPLICATE": 24900,
+      "EXACT_DUPLICATE": 1476,
+      "CANDIDATE_SITE_DATE_DUPLICATE": 1411,
+      "MALFORMED_ADMIN_GEOGRAPHY": 1318,
+      "COORDINATE_MISSING": 357,
+      "EXTREME_WATER_LEVEL_REVIEW_REQUIRED": 159,
+      "SEVERE_EXTREME_WATER_LEVEL_REVIEW_REQUIRED": 3
+    },
+    "coordinate_inversions_corrected": 389154,
+    "water_level_stats": {
+      "min": 0.0,
+      "median": 5.2,
+      "mean": 7.8562,
+      "max": 53943.6,
+      "missing_count": 0
+    }
+  },
+  "maharashtra_summary": {
+    "total_input_rows": 218791,
+    "total_output_rows": 218791,
+    "analytics_ready_rows": 210670,
+    "analytics_ready_pct": 96.29,
+    "excluded_from_analytics": 8121,
+    "unique_stations": 1014,
+    "timestamp_range": {
+      "min": "2026-01-01T00:00:00",
+      "max": "2026-05-30T00:00:00"
+    },
+    "quality_flag_counts": {
+      "CONFLICTING_DUPLICATE": 7309,
+      "EXTREME_WATER_LEVEL_REVIEW_REQUIRED": 889
+    },
+    "water_level_stats": {
+      "min": -1791.03,
+      "median": -10.09,
+      "mean": -14.068,
+      "max": 213.318,
+      "missing_count": 0
+    }
+  },
+  "quality_config": {
+    "india_min_level": 0.0,
+    "india_max_level": 150.0,
+    "india_extreme_level": 500.0,
+    "maharashtra_min_level": -100.0,
+    "maharashtra_max_level": 50.0,
+    "india_lat_bounds": [
+      6.0,
+      38.0
+    ],
+    "india_lng_bounds": [
+      68.0,
+      98.0
+    ],
+    "disqualifying_flags": [
+      "CONFLICTING_DUPLICATE",
+      "COORDINATE_MISSING",
+      "COORDINATE_OUT_OF_BOUNDS",
+      "EXACT_DUPLICATE",
+      "EXTREME_WATER_LEVEL_REVIEW_REQUIRED",
+      "SEVERE_EXTREME_WATER_LEVEL_REVIEW_REQUIRED"
+    ]
+  }
+}

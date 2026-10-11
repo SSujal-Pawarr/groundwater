@@ -1,0 +1,98 @@
+{
+  "milestone": "5",
+  "task": "Forecasting and Anomaly Detection (Final Scientific Verification Pass)",
+  "evaluation_date": "2026-10-03",
+  "india_dataset": {
+    "total_sites_raw": 41069,
+    "eligible_sites": 29185,
+    "excluded_sites": 11884,
+    "exclusion_reason": "Insufficient historical years (< 5 distinct years of data). This is an experimental eligibility rule, not a hydrological law.",
+    "eligible_rows": 1528900,
+    "excluded_rows": 40268,
+    "population_percentage": 97.4,
+    "distinct_years_per_site": {
+      "mean": 12.3,
+      "std": 10.1,
+      "min": 1.0,
+      "p25": 3.0,
+      "median": 10.0,
+      "p75": 19.0,
+      "max": 31.0
+    },
+    "target_time_gap_days": {
+      "mean": 122.9,
+      "median": 92.0,
+      "p25": 71.0,
+      "p75": 122.0,
+      "max": 10833.0
+    },
+    "num_samples_test": 224958,
+    "anomalies_detected": 9180,
+    "anomalies_percentage": 0.60,
+    "anomaly_type": "Descriptive Historical Anomaly Analysis (Not Causal Real-Time Alerts)",
+    "metrics": {
+      "persistence": {
+        "mae": 2.0495,
+        "rmse": 4.0514,
+        "r2": 0.8397,
+        "median_ae": 1.2000
+      },
+      "seasonal_historical": {
+        "mae": 2.0499,
+        "rmse": 9.1901,
+        "r2": 0.1320,
+        "median_ae": 1.0800
+      },
+      "linear_regression": {
+        "mae": 5.5153,
+        "rmse": 9.7020,
+        "r2": 0.0786,
+        "median_ae": 4.2096
+      },
+      "hist_gradient_boosting": {
+        "mae": 2.6764,
+        "rmse": 10.8949,
+        "r2": -0.1620,
+        "median_ae": 1.8904
+      }
+    }
+  },
+  "maharashtra_dataset": {
+    "total_rows": 218791,
+    "num_samples_test": 32667,
+    "anomalies_detected": 0,
+    "anomalies_percentage": 0.00,
+    "cadence_hours": {
+      "median": 6.0,
+      "p25": 6.0,
+      "p75": 6.0,
+      "p95": 48.0,
+      "max": 2160.0,
+      "pct_exactly_6h": 85.11
+    },
+    "metrics": {
+      "persistence_next_observation": {
+        "mae": 0.6498,
+        "rmse": 5.4720,
+        "r2": 0.9950,
+        "median_ae": 0.0200
+      },
+      "hist_gradient_boosting_next_observation": {
+        "mae": 5.6672,
+        "rmse": 63.3989,
+        "r2": 0.3248,
+        "median_ae": 0.2241
+      }
+    }
+  },
+  "conclusions": [
+    "India dataset (Full Eligible Population): Persistence provides a very strong baseline (R2: 0.84), significantly outperforming Seasonal Historical (R2: 0.13) and ML models (Linear: 0.07, HistGB: -0.16) for a one-step-ahead next-observation prediction.",
+    "Maharashtra dataset: 6-hourly telemetry has extremely high autocorrelation. Persistence baseline achieves near-perfect R2 (0.995). The ML model failed to capture dynamics significantly better than Persistence for predicting the next observation.",
+    "Absolute chronological splitting with zero temporal leakage was successfully enforced across the entire eligible scientific population.",
+    "The anomaly detector utilizes full dataset seasonal means and therefore represents descriptive historical anomaly analysis, not a production-ready real-time causal alerting system."
+  ],
+  "test_suite": {
+    "passed_tests": 3,
+    "status": "PASS"
+  }
+}
