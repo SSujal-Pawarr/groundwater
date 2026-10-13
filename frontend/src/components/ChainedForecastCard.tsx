@@ -34,12 +34,12 @@ export function ChainedForecastCard({ siteId, dataset }: Props) {
   }, [siteId, dataset]);
 
   return (
-    <div className="p-4 border-b border-slate-800/50" data-testid="chained-forecast-card">
-      <div className="text-[10px] uppercase tracking-widest text-amber-500/80 mb-2 font-medium">
+    <div className="border-b border-slate-200 py-4" data-testid="chained-forecast-card">
+      <div className="mb-2 text-[10px] font-medium uppercase text-emerald-800">
         Rough Estimate to Target Date (no recent data)
       </div>
       {loading ? (
-        <div className="animate-pulse h-6 w-32 bg-slate-800 rounded"></div>
+        <div className="h-6 w-32 animate-pulse bg-slate-200"></div>
       ) : error ? (
         <div className="text-slate-500 text-xs italic">{error}</div>
       ) : !data ? (
@@ -48,12 +48,12 @@ export function ChainedForecastCard({ siteId, dataset }: Props) {
         <div className="flex flex-col gap-3">
           <div>
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="font-mono text-lg font-bold text-slate-100">{data.predicted_water_level.toFixed(2)}</span>
+              <span className="font-mono text-lg font-bold text-slate-800">{data.predicted_water_level.toFixed(2)}</span>
               <span className="text-slate-500 text-xs">{data.water_level_unit}</span>
               <span className="text-xs text-amber-400 font-medium">for {data.predicted_for_date}</span>
             </div>
             {data.predicted_lower_80 != null && data.predicted_upper_80 != null && (
-              <div className="text-xs text-slate-400 mt-0.5">
+              <div className="mt-0.5 text-xs text-slate-600">
                 80% range {data.predicted_lower_80.toFixed(2)} to {data.predicted_upper_80.toFixed(2)}
                 {data.interval_basis.startsWith('extrapolated') ? ' (extrapolated, wider than measured)' : ''}
               </div>
@@ -67,7 +67,7 @@ export function ChainedForecastCard({ siteId, dataset }: Props) {
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="text-slate-500">Estimated state</span>
             <span
-              className="px-2 py-0.5 rounded font-semibold tracking-wide"
+              className="border border-emerald-600 px-2 py-0.5 font-semibold"
               style={{ color: STATE_COLORS[data.predicted_condition_state] ?? '#94a3b8', border: `1px solid ${(STATE_COLORS[data.predicted_condition_state] ?? '#94a3b8')}50` }}
               aria-label={`Estimated condition state: ${label(data.predicted_condition_state)}`}
             >
@@ -75,12 +75,12 @@ export function ChainedForecastCard({ siteId, dataset }: Props) {
             </span>
           </div>
 
-          <div className="text-[11px] text-slate-400" data-testid="chain-method">
+          <div className="text-[11px] text-slate-600" data-testid="chain-method">
             Method: {data.method === 'persistence_fallback' ? 'last known level (chained model showed no skill in backtest)' : 'chained XGBoost'}
           </div>
 
           {data.warnings.length > 0 && (
-            <ul className="text-[10px] text-amber-500/90 leading-relaxed list-disc pl-4" data-testid="chain-warnings">
+            <ul className="list-disc pl-4 text-[10px] leading-relaxed text-emerald-800" data-testid="chain-warnings">
               {data.warnings.map((w) => <li key={w}>{w}</li>)}
             </ul>
           )}

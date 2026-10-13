@@ -127,12 +127,12 @@ def compute_drought_intelligence(df: pd.DataFrame, region_col: str = "district")
     # 1. Calculate historical percentiles (grouped by site and season)
     df_out = df_out.sort_values([site_col, season_col, "_parsed_date"]).reset_index(drop=True)
     
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter(action='ignore', category=FutureWarning)
-        processed = df_out.groupby([site_col, season_col], group_keys=False).apply(
-            _compute_expanding_percentile_drought, val_col=val_col
-        )
+    processed = pd.concat(
+        [
+            _compute_expanding_percentile_drought(group, val_col=val_col)
+            for _, group in df_out.groupby([site_col, season_col], sort=False, dropna=False)
+        ]
+    ).sort_index()
     
     processed["groundwater_deficit_signal"] = np.where(
         processed["groundwater_percentile"] < DEFICIT_P25, True, False

@@ -180,23 +180,24 @@ def compute_scarcity_intelligence(df: pd.DataFrame, is_india: bool = True, regio
     # Reusing M10 drought logic for expanding percentile
     df_out = df_out.sort_values([site_col, season_col, "_parsed_date"]).reset_index(drop=True)
     
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter(action='ignore', category=FutureWarning)
-        processed = df_out.groupby([site_col, season_col], group_keys=False).apply(
-            _compute_expanding_percentile_stress, val_col=val_col
-        )
+    processed = pd.concat(
+        [
+            _compute_expanding_percentile_stress(group, val_col=val_col)
+            for _, group in df_out.groupby([site_col, season_col], sort=False, dropna=False)
+        ]
+    ).sort_index()
         
     # 2. Calculate persistence (grouped by site, sorted by date across all seasons)
     processed = processed.sort_values([site_col, "_parsed_date"]).reset_index(drop=True)
     processed = _calculate_persistence_stress(processed) # Adds consecutive_deficit_seasons
     
     # 3. Calculate expanding trend strictly backward-looking
-    with warnings.catch_warnings():
-        warnings.simplefilter(action='ignore', category=FutureWarning)
-        processed = processed.groupby(site_col, group_keys=False).apply(
-            _compute_expanding_trend, val_col=val_col, date_col="_parsed_date"
-        )
+    processed = pd.concat(
+        [
+            _compute_expanding_trend(group, val_col=val_col, date_col="_parsed_date")
+            for _, group in processed.groupby(site_col, sort=False, dropna=False)
+        ]
+    ).sort_index()
     
     # 4. Spatial Aggregation (grouped by region, year, season)
     processed["observation_year"] = processed["_parsed_date"].dt.year

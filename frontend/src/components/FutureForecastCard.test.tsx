@@ -36,6 +36,25 @@ describe('FutureForecastCard', () => {
     expect(screen.getByLabelText(/Predicted condition state: EXTREMELY HIGH/)).toBeInTheDocument();
   });
 
+  test('labels a chained fallback and explains why direct M17 is unavailable', async () => {
+    vi.spyOn(api, 'fetchFutureForecast').mockResolvedValue({
+      ...sample,
+      forecast_source: 'chained_fallback',
+      forecast_method: 'persistence_fallback',
+      estimate_label: 'ESTIMATED_WITHOUT_RECENT_DATA',
+      requested_target_date: '2026-11-10',
+      predicted_for_date: '2026-11-30',
+      forecast_reason: 'Chained model did not beat persistence.',
+      warnings: ['Recharge data is unavailable.'],
+    });
+    render(<FutureForecastCard siteId="MH_CHAIN" dataset="maharashtra" />);
+
+    expect(await screen.findByText(/Chained M17 estimate/)).toBeInTheDocument();
+    expect(screen.getByText(/Direct forecast unavailable for this site/)).toBeInTheDocument();
+    expect(screen.getByText(/Chained model did not beat persistence/)).toBeInTheDocument();
+    expect(screen.getByText(/Recharge data is unavailable/)).toBeInTheDocument();
+  });
+
   test('shows neutral message when no forecast exists', async () => {
     vi.spyOn(api, 'fetchFutureForecast').mockResolvedValue(null);
     render(<FutureForecastCard siteId="MH_Y" dataset="maharashtra" />);

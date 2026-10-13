@@ -208,6 +208,43 @@ def api_client(tmp_path, monkeypatch):
         row[f"prob_{c}"] = 0.1 if c != "EXTREMELY_HIGH" else 0.6
     row2 = dict(row, candidate_site_id="MH_Y", district="Nashik", predicted_condition_state="LOW", predicted_percentile_vs_history=np.nan)
     pd.DataFrame([row, row2]).to_parquet(tmp_path / "maharashtra_future_forecast.parquet", index=False)
+    chained_row = {
+        "candidate_site_id": "MH_CHAIN",
+        "region": "maharashtra",
+        "estimate_label": "ESTIMATED_WITHOUT_RECENT_DATA",
+        "origin_date": "2026-05-30",
+        "origin_water_level": -10.0,
+        "requested_target_date": "2026-11-10",
+        "predicted_for_date": "2026-11-30",
+        "n_steps": 6,
+        "step_months": 1,
+        "months_to_target": 5.4,
+        "backtested_steps": 2,
+        "data_gap_days": 184,
+        "method": "persistence_fallback",
+        "method_reason": "chained model did not beat persistence",
+        "predicted_water_level": -10.0,
+        "predicted_change": 0.0,
+        "predicted_lower_80": -14.0,
+        "predicted_upper_80": -5.0,
+        "interval_basis": "extrapolated_sqrt_from_2_steps",
+        "predicted_percentile_vs_history": np.nan,
+        "current_condition_state": "HIGH",
+        "predicted_condition_state": "INSUFFICIENT_HISTORY",
+        "predicted_state_confidence": np.nan,
+        "warnings": "monsoon data unavailable; interval extrapolated",
+        "path_levels": json.dumps([{"date": "2026-05-30", "level": -10.0}]),
+        "state": "Maharashtra",
+        "district": "Akola",
+        "lat": 20.4,
+        "lon": 76.8,
+        "water_level_unit": "meters",
+        "model_version": "M17-FutureForecast-v1-chain",
+        "data_through": "2026-05-30",
+    }
+    for condition in CONDITION_ORDER:
+        chained_row[f"prob_{condition}"] = np.nan
+    pd.DataFrame([chained_row]).to_parquet(tmp_path / "maharashtra_chained_forecast.parquet", index=False)
     (tmp_path / "maharashtra_summary.json").write_text(json.dumps({"selection": {"selected_horizon_months": 1}}))
     yield TestClient(app)
     ff._cache.clear()
@@ -220,6 +257,17 @@ def test_api_site_forecast(api_client):
     assert d["predicted_condition_state"] == "EXTREMELY_HIGH"
     assert set(d["predicted_condition_probabilities"]) == set(CONDITION_ORDER)
     assert not any(k.startswith("prob_") for k in d)
+
+
+def test_api_site_forecast_falls_back_to_chain_when_direct_row_is_missing(api_client):
+    response = api_client.get("/api/v1/maharashtra/candidate-sites/MH_CHAIN/future-forecast")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["forecast_source"] == "chained_fallback"
+    assert body["target_date"] == "2026-11-30"
+    assert body["forecast_method"] == "persistence_fallback"
+    assert body["warnings"] == ["monsoon data unavailable", "interval extrapolated"]
 
 
 def test_api_nan_becomes_null_and_filters_work(api_client):

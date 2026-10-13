@@ -164,17 +164,17 @@ describe('M8.5-A MapView State Visualization & Legend Tests', () => {
     expect(paint['circle-color']).toContain('#6b7280');
   });
 
-  test('12. Clusters remain neutral blue (independent of site states)', () => {
+  test('12. Clusters remain neutral emerald (independent of site states)', () => {
     const { getByTestId } = render(
       <MapView sites={dummySites} dataset="india" selectedSiteId={null} onSiteSelect={() => {}} onBoundsChange={() => {}} />
     );
     const clusterLayer = getByTestId('layer-clusters');
     const paint = JSON.parse(clusterLayer.getAttribute('data-paint') || '{}');
     const clusterColor = JSON.stringify(paint['circle-color']);
-    // Must contain step on point_count, and blue/slate shades
+    // Cluster shades use the dashboard's official green accent.
     expect(clusterColor).toContain('point_count');
-    expect(clusterColor).toContain('#1e40af'); // blue
-    expect(clusterColor).toContain('#1d4ed8'); // blue
+    expect(clusterColor).toContain('#166534');
+    expect(clusterColor).toContain('#14532d');
     expect(clusterColor).not.toContain('condition_state');
     expect(clusterColor).not.toContain('alert_event_state');
   });
@@ -186,7 +186,7 @@ describe('M8.5-A MapView State Visualization & Legend Tests', () => {
     const haloLayer = getByTestId('layer-selected-halo');
     expect(haloLayer).toBeInTheDocument();
     const haloPaint = JSON.parse(haloLayer.getAttribute('data-paint') || '{}');
-    expect(haloPaint['circle-stroke-color']).toBe('#60a5fa');
+    expect(haloPaint['circle-stroke-color']).toBe('#047857');
 
     // GeoJSON feature properties have selected: true for IND_1
     const source = getByTestId('source-sites');

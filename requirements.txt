@@ -18,6 +18,11 @@ duckdb>=0.9.0
 # Future forecasting (M17): XGBoost regressor + future-state classifier
 xgboost>=2.0.0
 scikit-learn>=1.3.0
+joblib>=1.3.0
 scipy>=1.10.0
 pyarrow>=14.0.0
 httpx>=0.24.0
+
+# Advanced Forecast (new): Seasonal Harmonic ML + Deep Learning LSTM
+lightgbm>=4.0.0
+torch>=2.0.0
