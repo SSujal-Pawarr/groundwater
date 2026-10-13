@@ -399,7 +399,7 @@ def _predict_chained_internal(site_id: str, target_dt: date, origin_date: pd.Tim
     """Run chained XGBoost roll-forward specifically for the requested site for instantaneous latency."""
     try:
         from src.api.routes.forecasts import _load_chain_context
-        from src.forecasting.chain import chained_forecast, MAX_STEPS
+        from src.forecasting.chain import roll_levels, MAX_STEPS
 
         context = _load_chain_context()
         feats = context["features"]
@@ -411,37 +411,33 @@ def _predict_chained_internal(site_id: str, target_dt: date, origin_date: pd.Tim
                 "method": "Persistence Fallback (site not in feature matrix)",
             }
 
-        results, _ = chained_forecast(
-            context["cfg"],
-            "maharashtra",
-            context["step_months"],
-            site_feats,
-            context["observations"],
-            context["regressor"],
-            context["classifier"],
-            context["group_table"],
-            context["season_map"],
-            context["backtest"],
-            pd.Timestamp(target_dt),
-            MAX_STEPS["maharashtra"],
-        )
-        if results.empty:
-            return {
-                "predicted_level": round(origin_level, 3),
-                "predicted_change": 0.0,
-                "method": "Persistence Fallback (site not eligible for chained steps)",
-            }
-        r = results.iloc[0]
+        months_gap = (pd.Timestamp(target_dt) - site_feats["date"].iloc[0]).days / 30.4375
+        h = int(context.get("step_months", 1))
+        k = int(np.clip(np.rint(months_gap / h), 1, MAX_STEPS["maharashtra"]))
+        reg = context["regressor"]
+
+        levels_rolled, _, _ = roll_levels("maharashtra", site_feats, h, k, reg, context["group_table"], context["season_map"], persist_mask=None)
+        pred_val = float(levels_rolled[0, k])
+        pred_delta = pred_val - origin_level
+
+        # Empirical 80% confidence interval scaled by sqrt(k)
+        bt = context.get("backtest", {})
+        iv_lo = -1.89 * np.sqrt(k)
+        iv_hi = 1.89 * np.sqrt(k)
+        if bt and str(k) in bt and bt[str(k)].get("evaluable"):
+            iv_lo = bt[str(k)].get("resid_q10", iv_lo)
+            iv_hi = bt[str(k)].get("resid_q90", iv_hi)
+
         return {
-            "predicted_level": round(float(r["predicted_water_level"]), 3),
-            "predicted_change": round(float(r["predicted_change"]), 3),
+            "predicted_level": round(pred_val, 3),
+            "predicted_change": round(pred_delta, 3),
             "confidence_interval_80": [
-                round(float(r["predicted_lower_80"]), 3) if pd.notna(r.get("predicted_lower_80")) else None,
-                round(float(r["predicted_upper_80"]), 3) if pd.notna(r.get("predicted_upper_80")) else None,
+                round(pred_val + iv_lo, 3),
+                round(pred_val + iv_hi, 3),
             ],
-            "method": f"Chained XGBoost Step Model ({r.get('method', 'unknown')})",
-            "n_steps": int(r["n_steps"]),
-            "method_reason": str(r.get("method_reason", "")),
+            "method": f"Autoregressive Multi-Horizon XGBoost (k={k} steps)",
+            "n_steps": k,
+            "method_reason": f"Recursive multi-step roll-forward across {k} step(s)",
         }
     except Exception:
         LOGGER.warning("chained prediction failed", exc_info=True)
@@ -450,6 +446,7 @@ def _predict_chained_internal(site_id: str, target_dt: date, origin_date: pd.Tim
             "predicted_change": 0.0,
             "method": "Persistence Fallback (chained calculation error)",
         }
+
 
 
 
