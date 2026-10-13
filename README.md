@@ -7,6 +7,10 @@ A data-driven groundwater intelligence, monitoring, and predictive analysis plat
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
 ![DuckDB](https://img.shields.io/badge/DuckDB-Analytical_Engine-FFF000?logo=duckdb&logoColor=black)
+![PyTorch](https://img.shields.io/badge/PyTorch-2.x-EE4C2C?logo=pytorch&logoColor=white)
+![LightGBM](https://img.shields.io/badge/LightGBM-4.x-brightgreen)
+![MapLibre](https://img.shields.io/badge/MapLibre_GL-6.x-blue?logo=maplibre&logoColor=white)
+![ECharts](https://img.shields.io/badge/Apache_ECharts-6.x-red?logo=apacheecharts&logoColor=white)
 
 An analytical data-access and forecasting platform providing reproducible hydrological intelligence without reliance on opaque generative shortcuts.
 
@@ -16,6 +20,14 @@ An analytical data-access and forecasting platform providing reproducible hydrol
 - [Problem Statement](#problem-statement)
 - [Core Objectives](#core-objectives)
 - [System Architecture](#system-architecture)
+- [End-to-End Data Flow](#end-to-end-data-flow)
+- [Software Architecture](#software-architecture)
+- [Frontend Architecture & Interactive Modules](#frontend-architecture--interactive-modules)
+  - [1. Overview Command Center](#1-overview-command-center)
+  - [2. Geospatial Map Explorer](#2-geospatial-map-explorer)
+  - [3. Predictive Analytics Suite](#3-predictive-analytics-suite)
+  - [4. Advanced Forecast Module](#4-advanced-forecast-module)
+  - [5. Methodology & Model Deep-Dive](#5-methodology--model-deep-dive)
 - [Dataset Architecture (India vs Maharashtra)](#dataset-architecture-india-vs-maharashtra)
 - [Intelligence & Modeling Engines](#intelligence--modeling-engines)
   - [1. Data Normalization & Quality Control](#1-data-normalization--quality-control)
@@ -32,8 +44,14 @@ An analytical data-access and forecasting platform providing reproducible hydrol
   - [3. Backend Setup (Python & FastAPI)](#3-backend-setup-python--fastapi)
   - [4. Data Initialization (Rebuilding Normalized Parquet)](#4-data-initialization-rebuilding-normalized-parquet)
   - [5. Frontend Setup (React & Vite)](#5-frontend-setup-react--vite)
-  - [6. Verifying the Full Stack](#6-verifying-the-full-stack)
+  - [6. Running the Platform](#6-running-the-platform)
+  - [7. Automated Testing Suite](#7-automated-testing-suite)
+  - [8. Model Training Pipelines](#8-model-training-pipelines)
 - [API Reference](#api-reference)
+  - [System Endpoints](#system-endpoints)
+  - [Monitoring Stations & Telemetry](#monitoring-stations--telemetry)
+  - [Temporal & Spatial Analytics](#temporal--spatial-analytics)
+  - [Predictive Forecasting & Benchmarks](#predictive-forecasting--benchmarks)
 - [Scientific Limitations](#scientific-limitations)
 - [Authors & License](#authors--license)
 
@@ -68,25 +86,164 @@ Note: This system provides academic and engineering decision-support intelligenc
 
 ```mermaid
 flowchart TB
-    RAW[Raw Telemetry & Seasonal Records] --> INGEST[Schema Ingestion & Quality Audit]
-    INGEST --> NORM[Normalized Parquet Tables]
-    NORM --> ENGINES
+    RAW_DATA[Raw Groundwater & Weather Observations] --> INGESTION[Data Ingestion & Normalization]
+    INGESTION --> QUALITY[Quality Control & Physical Plausibility Filters]
+    QUALITY --> PROCESSED[Canonical Processed Parquet Tables]
+    PROCESSED --> FEATURES[Feature Engineering & Temporal Baselines]
     
-    subgraph ENGINES [Analytical & Predictive Engines]
+    FEATURES --> AE_SUB
+    
+    subgraph AE_SUB [Analytical & Intelligence Engines]
         direction TB
-        QC[Outlier Screening & Anomaly Z-Scores]
+        TEMP[Temporal & Seasonal Analytics]
+        SPATIAL[Spatial Analytics & Coordinate Clustering]
+        BASE[Historical Empirical Baselines]
         COND[Percentile Condition Classification]
-        ALERTS[Statistical Alert & Spill Detection]
-        HARM[Fourier Seasonal Harmonic Model]
-        LSTM[Deep Recurrent Sequence Model]
-        CHAIN[Autoregressive Horizon Model]
+        ALERT[Statistical Anomaly & Alert Engine]
+        HARM[Fourier Seasonal Harmonic Forecasting]
+        LSTM[Deep Recurrent Sequence LSTM]
+        AR[Autoregressive Horizon Chained Forecaster]
+        SCENARIO[Climate & Monsoon Recharge Scenarios]
         PERSIST[Baseline Persistence Reference]
+        DROUGHT[Drought Deficit Intelligence]
+        FLOOD[Flood Potential Multi-Signal Classifier]
+        STRESS[Aquifer Stress & Chronic Drawdown Analytics]
     end
     
-    ENGINES --> DUCKDB[DuckDB Analytical Storage & Fast Caches]
-    DUCKDB --> API[FastAPI Asynchronous Endpoints]
-    API --> UI[React Dashboard & MapLibre GL]
+    AE_SUB --> ARTIFACTS[Persisted Parquet Artifacts & Model Cache]
+    ARTIFACTS --> DUCKDB[DuckDB High-Performance Query Layer]
+    DUCKDB --> FASTAPI[FastAPI Asynchronous REST Endpoints]
+    FASTAPI --> REACT[React 19 + TypeScript Analytical Dashboard]
+    
+    REACT --> MAP[MapLibre GL Interactive Geospatial Map]
+    REACT --> CHARTS[Apache ECharts Predictive Trajectories & Hydrographs]
 ```
+
+## End-to-End Data Flow
+
+```mermaid
+flowchart LR
+    Obs[Raw Observations] --> Norm[Schema Normalization]
+    Norm --> Sites[Candidate-Site ID & Spatial Clustering]
+    Sites --> QA[Quality Filtering & Outlier Removal]
+    QA --> Eng[Feature Generation & Lag Variables]
+    Eng --> Intel[Predictive & Anomaly Engines]
+    Intel --> Parquet[Normalized Parquet Tables]
+    Parquet --> DuckDB[DuckDB In-Memory Query Layer]
+    DuckDB --> API[FastAPI Asynchronous Endpoints]
+    API --> UI[React 19 Interactive Dashboard]
+```
+
+## Software Architecture
+
+```mermaid
+flowchart TD
+    subgraph Client ["Client Application (React 19 + TypeScript)"]
+        UI_Dash[Overview Dashboard & Alert Radar]
+        UI_Map[Geospatial MapLibre GL Explorer]
+        UI_Pred[Predictive Analytics Suite]
+        UI_Adv[Advanced Forecast Statewide Module]
+        UI_Meth[Methodology & Model Deep-Dive]
+        UI_Site[Station Drawer & ECharts Hydrographs]
+        UI_Diag[Data Diagnostics & Sparsity Audit Popover]
+    end
+
+    subgraph Service ["API Service Layer (FastAPI Asynchronous)"]
+        API_Sites["/candidate-sites Endpoints"]
+        API_Telem["/telemetry Endpoints"]
+        API_Alerts["/alerts Endpoints"]
+        API_Cond["/condition Endpoints"]
+        API_Anly["/analytics & /timeline Endpoints"]
+        API_Fore["/advanced-forecast Multi-Model Suite"]
+        API_Bench["/advanced-forecast/models Benchmark"]
+        API_Chain["/chained-forecast Endpoints"]
+    end
+
+    subgraph DataAccess ["Data Access Layer (DuckDB In-Memory Engine)"]
+        DAL_Engine[DuckDB SQL Interface]
+        Cache_Site[Site Metadata & Coordinate Index]
+        Cache_Telem[Historical Telemetry Cache]
+        Cache_Alert[Anomaly Alert Record Cache]
+    end
+
+    subgraph Pipeline ["Analytical & Predictive Processing Pipeline"]
+        PIPE_Norm[scripts/rebuild_processed_from_alerts.py]
+        PIPE_Harm[src/forecasting/seasonal_harmonic.py]
+        PIPE_LSTM[src/forecasting/lstm_forecaster.py]
+        PIPE_Chain[src/forecasting/chain.py]
+        PIPE_Alert[src/alerting/causal_alert_engine.py]
+        PIPE_Feat[src/features/advanced_analytics.py]
+    end
+
+    subgraph Storage ["Persisted Storage Layer (Apache Parquet)"]
+        DS_Raw["data/raw/ (Raw Source Telemetry)"]
+        DS_Norm["data/processed/ (Normalized Parquet)"]
+        DS_Alert["data/alerts/ (Precomputed Alert Artifacts)"]
+        DS_Cond["data/conditions/ (Empirical Baselines)"]
+        DS_Model["models/advanced_forecast/ (Trained Weights)"]
+    end
+
+    UI_Dash --> API_Sites
+    UI_Dash --> API_Alerts
+    UI_Map --> API_Sites
+    UI_Map --> UI_Site
+    UI_Pred --> API_Fore
+    UI_Pred --> UI_Diag
+    UI_Adv --> API_Fore
+    UI_Adv --> API_Bench
+    UI_Site --> API_Telem
+    UI_Site --> API_Alerts
+    UI_Site --> API_Cond
+    UI_Site --> API_Anly
+
+    API_Sites --> Cache_Site
+    API_Telem --> Cache_Telem
+    API_Alerts --> Cache_Alert
+    API_Cond --> DAL_Engine
+    API_Anly --> DAL_Engine
+    API_Fore --> PIPE_Harm
+    API_Fore --> PIPE_LSTM
+    API_Fore --> PIPE_Chain
+    API_Chain --> PIPE_Chain
+
+    DAL_Engine --> DS_Norm
+    DAL_Engine --> DS_Alert
+    DAL_Engine --> DS_Cond
+    PIPE_Harm --> DS_Model
+    PIPE_LSTM --> DS_Model
+    PIPE_Norm --> DS_Raw
+    PIPE_Norm --> DS_Norm
+```
+
+## Frontend Architecture & Interactive Modules
+
+The user interface is built with React 19, TypeScript, Tailwind CSS, MapLibre GL, and Apache ECharts, organized across five primary workflows:
+
+### 1. Overview Command Center
+- **State & Regional Aggregations**: Displays top-level indicators including total active stations, historical observation volume, critical alerts, and percentile health distribution.
+- **Alert Radar & Rapid Response**: Categorizes anomalies by severity (`CRITICAL_STATISTICAL_DEVIATION`, `WARNING`, `WATCH`).
+- **Interactive Station Handoff**: Selecting any critical alert record immediately transitions the view to the Geospatial Map tab, filters by district, and opens the station drawer inspector. Deep-linking via query parameters (`?tab=map&site=SITE_ID&district=DISTRICT`) enables direct external sharing.
+
+### 2. Geospatial Map Explorer
+- **Vector-Rendered Map**: Hardware-accelerated rendering powered by MapLibre GL JS with marker clustering and zoom transitions.
+- **Filtering & Search**: Dynamic filtering by dataset region (India vs Maharashtra), administrative district, and free-text station search.
+- **Slide-Out Station Drawer**: Detailed site inspection containing historical water-level hydrograph, current percentile classification badge, anomaly residual movement logs, and geographic coordinates.
+
+### 3. Predictive Analytics Suite
+- **Continuous Multi-Model Hydrograph**: Renders parallel model projections on a single unified timeline comparing Seasonal Harmonic, Deep LSTM, Autoregressive Horizon, and Baseline Persistence.
+- **Monsoon Scenario Simulation**: Toggles between Baseline (1.0x recharge), Deficit (-20% recharge stress), and Excess (+20% surplus recharge) scenarios to project aquifer resilience.
+- **Multi-Model Interpretation Cards**: Side-by-side analytical cards explaining the physical reasoning, seasonal turning points, and confidence bounds for each active model.
+- **Hydrogeological Diagnostics Popover**: Interactive sparsity audit displaying total record counts, observation spans, and explanation of calibrated regional harmonic fallbacks when historical telemetry is limited.
+
+### 4. Advanced Forecast Module
+- **Statewide Predictive Mapping**: Aggregates predicted water table shifts across all Maharashtra monitoring stations.
+- **Multi-Station Comparison**: Side-by-side hydrographs and drawdown rates across contrasting agro-climatic zones.
+- **Empirical Model Benchmarks**: Displays formal test-set validation metrics, including Directional Trend Precision, Mean Absolute Error (MAE in meters), and 80% Confidence Interval empirical coverage.
+
+### 5. Methodology & Model Deep-Dive
+- **Mathematical Formulations**: Comprehensive documentation of Fourier harmonic equations, Huber loss regression parameters, LSTM recurrence units, and DBSCAN spatial parameters.
+- **Hydrological Alignment**: Explanation of CGWB and GSDA classification criteria and percentile computation methodologies.
+- **Limitations & Boundaries**: Transparent declaration of system capabilities, data sparsity challenges, and decision-support operational context.
 
 ## Dataset Architecture (India vs Maharashtra)
 
@@ -146,7 +303,7 @@ The platform implements parallel forecasting engines running on verified telemet
 - **Backend Language**: Python 3.10+
 - **API Framework**: FastAPI 0.115 with Uvicorn
 - **Analytical Storage**: DuckDB, PyArrow, Apache Parquet
-- **Machine Learning**: LightGBM, PyTorch, Scikit-learn, NumPy, Pandas
+- **Machine Learning**: LightGBM, PyTorch, Scikit-learn, NumPy, Pandas, Scipy
 - **Frontend Framework**: React 19, TypeScript 5.x, Vite
 - **Mapping & Geospatial**: MapLibre GL JS, React-Map-GL
 - **Data Visualization**: Apache ECharts (`echarts-for-react`)
@@ -157,7 +314,7 @@ The platform implements parallel forecasting engines running on verified telemet
 ```text
 groundwater/
 ├── data/                       # Local datasets (Parquet binaries excluded from git)
-│   ├── alerts/                 # Causal alert artifacts
+│   ├── alerts/                 # Precomputed causal alert artifacts
 │   ├── conditions/             # Baseline condition Parquet files
 │   ├── processed/              # Normalized observation records
 │   └── raw/                    # Raw source telemetry and survey files
@@ -172,11 +329,13 @@ groundwater/
 │   ├── package.json
 │   └── vite.config.ts
 ├── models/                     # Trained forecasting weights and metadata JSONs
-│   └── advanced_forecast/
+│   ├── advanced_forecast/      # Harmonic weights and LSTM checkpoints
+│   └── groundwater_forecast/   # LightGBM chained horizon models
 ├── scripts/                    # Training and data processing utilities
 │   ├── rebuild_processed_from_alerts.py
-│   ├── train_seasonal_harmonic.py
-│   └── train_lstm_forecast.py
+│   ├── train_forecast_model.py
+│   ├── train_lstm_forecast.py
+│   └── train_seasonal_harmonic.py
 ├── src/                        # Core Python backend package
 │   ├── alerting/               # Statistical anomaly detection
 │   ├── api/                    # FastAPI routes and DuckDB Data Access Layer
@@ -185,8 +344,11 @@ groundwater/
 │   │   └── main.py             # FastAPI entry point
 │   ├── data/                   # Data loaders and schema normalizers
 │   ├── features/               # Spatial DBSCAN and temporal engineering
-│   └── forecasting/            # Chained step forecaster
+│   └── forecasting/            # Chained step forecaster and harmonic suites
 ├── tests/                      # Pytest suite
+│   ├── api/                    # API integration tests
+│   └── *.py                    # Pipeline, features, and model tests
+├── pytest.ini                  # Pytest configuration
 ├── requirements.txt            # Python dependencies
 └── README.md
 ```
@@ -201,7 +363,7 @@ Ensure your machine has the following tools installed:
 - **Python**: Version 3.10 or higher (`python3 --version` or `python --version`)
 - **Node.js**: Version 18 or higher (`node --version`) and npm (`npm --version`)
 
-If working on Windows, Windows Subsystem for Linux (WSL) or Git Bash is recommended.
+If working on Windows, Windows Subsystem for Linux (WSL), PowerShell, or Git Bash can be used.
 
 ### 2. Clone the Repository
 ```bash
@@ -267,20 +429,83 @@ The Vite development server will start on `http://localhost:5173`.
 
 Open your browser to **`http://localhost:5173`** to access the dashboard.
 
+### 7. Automated Testing Suite
+
+To run the complete test suite and verify system integrity:
+
+#### Run Backend Unit and Integration Tests:
+```bash
+pytest
+```
+
+To run API-specific tests with verbose output:
+```bash
+pytest tests/api/ -v
+```
+
+#### Run Frontend Component Tests:
+In the `frontend/` directory:
+```bash
+npm test
+```
+
+To run frontend code quality linting:
+```bash
+npm run lint
+```
+
+### 8. Model Training Pipelines
+
+Pre-trained model artifacts are included in the repository. If you wish to retrain or update the machine learning models on new observations:
+
+- **Train Seasonal Harmonic Models**:
+  ```bash
+  python scripts/train_seasonal_harmonic.py
+  ```
+- **Train Deep Learning LSTM Network**:
+  ```bash
+  python scripts/train_lstm_forecast.py
+  ```
+- **Train Autoregressive Chained Horizon Models**:
+  ```bash
+  python scripts/train_forecast_model.py
+  ```
+
 ## API Reference
 
 The backend exposes read-only analytical endpoints over HTTP:
 
+### System Endpoints
 | Endpoint | Method | Description |
 |---|---|---|
-| `/health` | GET | Health check confirming database connectivity and memory caches. |
-| `/api/v1/{region}/candidate-sites` | GET | List candidate monitoring stations with coordinates and current intelligence states. |
-| `/api/v1/{region}/candidate-sites/{id}/telemetry` | GET | Chronological historical telemetry readings for a specific station. |
-| `/api/v1/{region}/candidate-sites/{id}/alerts` | GET | Historical anomaly alert records and standardized scores. |
-| `/api/v1/{region}/candidate-sites/{id}/condition` | GET | Latest percentile condition classification and sample counts. |
-| `/api/v1/maharashtra/advanced-forecast` | GET | Parallel multi-model forward predictions with continuous trajectories and confidence intervals. |
-| `/api/v1/maharashtra/advanced-forecast/map` | GET | Statewide predicted water level conditions for all monitoring stations. |
-| `/api/v1/maharashtra/advanced-forecast/models` | GET | Formal benchmark precision metrics (Directional Precision, Physical MAE, 80% CI). |
+| `/health` | GET | Health check confirming database connectivity, active caches, and DuckDB initialization. |
+| `/docs` | GET | Interactive Swagger UI API documentation and parameter schemas. |
+
+### Monitoring Stations & Telemetry
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/v1/{region}/candidate-sites` | GET | List monitoring stations with coordinates, condition states, and anomaly alert levels. Supports bounding-box and district filtering. |
+| `/api/v1/{region}/candidate-sites/{id}/telemetry` | GET | Chronological historical telemetry observations for a specific station. |
+| `/api/v1/{region}/candidate-sites/{id}/alerts` | GET | Anomaly alert history and standardized residual deviation scores. |
+| `/api/v1/{region}/candidate-sites/{id}/condition` | GET | Latest percentile condition classification and historical sample count. |
+| `/api/v1/maharashtra/candidate-sites/{id}/forecast` | GET | Baseline persistence forecast record for the station. |
+
+### Temporal & Spatial Analytics
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/v1/{region}/candidate-sites/{id}/analytics` | GET | Station-level summary statistics, seasonal drawdown profile, and cross-intelligence synthesis. |
+| `/api/v1/{region}/candidate-sites/{id}/timeline` | GET | Unified chronological timeline with water levels, daily rate of change, condition states, and alerts. |
+| `/api/v1/{region}/candidate-sites/{id}/percentile-trajectory` | GET | Empirical historical percentile movements across observation cycles. |
+| `/api/v1/{region}/districts/{district}/analytics` | GET | District-wide spatial aggregation of station water level dynamics. |
+
+### Predictive Forecasting & Benchmarks
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/v1/maharashtra/advanced-forecast` | GET | Parallel multi-model forward predictions (Harmonic, LSTM, Autoregressive, Persistence) with scenario toggles and data diagnostics. |
+| `/api/v1/maharashtra/advanced-forecast/map` | GET | Statewide predicted water level conditions across all stations for geospatial mapping. |
+| `/api/v1/maharashtra/advanced-forecast/models/info` | GET | Formal validation metrics (Directional Precision, Physical MAE, 80% CI coverage) and architecture details. |
+| `/api/v1/{region}/future-forecast` | GET | Direct horizon predictions for candidate sites. |
+| `/api/v1/{region}/chained-forecast` | GET | Multi-step chained regression projections across horizons. |
 
 Supported `{region}` path parameters are `india` and `maharashtra`.
 
