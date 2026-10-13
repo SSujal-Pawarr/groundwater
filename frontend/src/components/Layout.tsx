@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Activity, BookOpen, BrainCircuit, ChartLine, Map, Waves } from 'lucide-react';
+import { Activity, BookOpen, BrainCircuit, ChartLine, Map, Waves, Moon, Sun } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 export type DashboardTab = 'overview' | 'map' | 'predictive' | 'advanced' | 'methodology';
 type ApiStatus = 'loading' | 'online' | 'error';
@@ -29,11 +30,12 @@ const statusConfig: Record<ApiStatus, { label: string; dotClass: string }> = {
 
 export function Layout({ activeTab, onTabChange, apiStatus, headerActions, children }: LayoutProps) {
   const status = statusConfig[apiStatus];
+  const { isDark, toggleTheme } = useTheme();
 
   return (
-    <div className="flex h-screen min-h-128 flex-col overflow-hidden bg-surface-base text-text-primary">
+    <div className="flex h-screen min-h-128 flex-col overflow-hidden bg-surface-base text-text-primary transition-colors duration-300">
       {/* ── Header ── */}
-      <header className="z-10 shrink-0 border-b border-glass-border bg-surface-raised/80 backdrop-blur-xl">
+      <header className="z-10 shrink-0 border-b border-glass-border bg-surface-raised/80 backdrop-blur-xl transition-colors duration-300">
         <div className="mx-auto flex min-h-16 max-w-screen-2xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-3 sm:px-6">
           {/* Brand */}
           <div className="flex min-w-0 items-center gap-3">
@@ -59,9 +61,32 @@ export function Layout({ activeTab, onTabChange, apiStatus, headerActions, child
               />
               {status.label}
             </div>
+
+            {/* Dark Mode Toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex items-center gap-1.5 rounded-lg border border-glass-border bg-glass-bg px-2.5 py-1.5 text-xs font-medium text-text-primary hover:border-glass-border-hover hover:bg-glass-bg-hover transition-all duration-200 focus-visible:outline-none focus-glow shadow-xs cursor-pointer"
+              title={isDark ? "Switch to Light Theme" : "Switch to Dark Theme"}
+              aria-label="Toggle theme mode"
+            >
+              {isDark ? (
+                <>
+                  <Sun className="h-3.5 w-3.5 text-amber-400 animate-fade-in" />
+                  <span className="hidden sm:inline text-[11px] font-semibold text-amber-300">Light UI</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="h-3.5 w-3.5 text-indigo-600 animate-fade-in" />
+                  <span className="hidden sm:inline text-[11px] font-semibold text-slate-700">Dark UI</span>
+                </>
+              )}
+            </button>
+
             {headerActions}
           </div>
         </div>
+
 
         {/* ── Navigation tabs ── */}
         <nav className="mx-auto max-w-screen-2xl overflow-x-auto px-4 sm:px-6" aria-label="Primary navigation">

@@ -41,6 +41,7 @@ import {
 import { AdvancedAnalytics } from './AdvancedAnalytics';
 import { FutureForecastCard } from './FutureForecastCard';
 import { DataDiagnosticPopover } from './DataDiagnosticPopover';
+import { useTheme } from '../context/ThemeContext';
 
 interface Props {
   site: CandidateSite;
@@ -117,17 +118,18 @@ export const InvestigationPanel: React.FC<Props> = ({
   onReturnToOverview,
   onSelectAlertSite,
 }) => {
+  const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<(IndiaAlert | MHAlert)[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [condition, setCondition] = useState<GroundwaterCondition | null>(null);
-  const [conditionLoading, setConditionLoading] = useState(true);
-  const [conditionError, setConditionError] = useState<string | null>(null);
+  const [, setConditionLoading] = useState(true);
+  const [, setConditionError] = useState<string | null>(null);
 
   const [forecast, setForecast] = useState<PersistenceForecast | null>(null);
-  const [forecastLoading, setForecastLoading] = useState(true);
-  const [forecastError, setForecastError] = useState<string | null>(null);
+  const [, setForecastLoading] = useState(true);
+  const [, setForecastError] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'overview' | 'analytics' | 'methodology'>('overview');
 
@@ -250,21 +252,23 @@ export const InvestigationPanel: React.FC<Props> = ({
   const chartOptions = useMemo(() => {
     return {
       animation: false,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDark ? 'transparent' : '#FFFFFF',
       tooltip: {
         trigger: isIndia ? 'item' : 'axis',
-        backgroundColor: '#FFFFFF',
-        borderColor: '#E2E8F0',
+        backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+        borderColor: isDark ? '#334155' : '#E2E8F0',
         borderWidth: 1,
-        textStyle: { color: '#1E293B', fontSize: 11 },
-        extraCssText: 'box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-radius: 8px;',
+        textStyle: { color: isDark ? '#F8FAFC' : '#1E293B', fontSize: 11 },
+        extraCssText: isDark
+          ? 'box-shadow: 0 4px 12px rgba(0,0,0,0.5); border-radius: 8px;'
+          : 'box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-radius: 8px;',
         formatter: isIndia
           ? (params: any) => {
               const d = data[params.dataIndex] as IndiaAlert;
               const val = d.water_level_raw != null ? d.water_level_raw.toFixed(3) : 'N/A';
               const cfg = getAlertConfig(d.alert_event_state);
               return `<div style="line-height:1.6">
-                <div style="color:#64748B;font-size:10px;font-weight:600">${d.observation_date}</div>
+                <div style="color:${isDark ? '#94A3B8' : '#64748B'};font-size:10px;font-weight:600">${d.observation_date}</div>
                 <div>Season: <b>${d.analytical_season ?? '—'}</b></div>
                 <div>Water Level: <b style="color:#059669">${val}</b></div>
                 <div>State: <span style="color:${cfg.color};font-weight:600">${cfg.icon} ${cfg.label}</span></div>
@@ -276,7 +280,7 @@ export const InvestigationPanel: React.FC<Props> = ({
               const val = d.water_level_raw != null ? d.water_level_raw.toFixed(3) + ' m' : 'N/A';
               const cfg = getAlertConfig(d.alert_event_state);
               return `<div style="line-height:1.6">
-                <div style="color:#64748B;font-size:10px;font-weight:600">${d.observation_timestamp?.split('T')[0]}</div>
+                <div style="color:${isDark ? '#94A3B8' : '#64748B'};font-size:10px;font-weight:600">${d.observation_timestamp?.split('T')[0]}</div>
                 <div>Telemetry Level: <b style="color:#059669">${val}</b></div>
                 <div>Alert Event: <span style="color:${cfg.color};font-weight:600">${cfg.icon} ${cfg.label}</span></div>
               </div>`;
@@ -286,7 +290,7 @@ export const InvestigationPanel: React.FC<Props> = ({
       xAxis: {
         type: 'time',
         axisLabel: {
-          color: '#64748B',
+          color: isDark ? '#94A3B8' : '#64748B',
           fontSize: 10,
           hideOverlap: true,
           formatter: (val: number) => {
@@ -295,14 +299,14 @@ export const InvestigationPanel: React.FC<Props> = ({
           },
         },
         splitLine: { show: false },
-        axisLine: { lineStyle: { color: '#E2E8F0' } },
+        axisLine: { lineStyle: { color: isDark ? '#334155' : '#E2E8F0' } },
       },
       yAxis: {
         type: 'value',
         name: isIndia ? 'Water Level' : 'Depth (m)',
-        nameTextStyle: { color: '#64748B', fontSize: 10 },
-        axisLabel: { color: '#64748B', fontSize: 10 },
-        splitLine: { lineStyle: { color: '#F1F5F9' } },
+        nameTextStyle: { color: isDark ? '#94A3B8' : '#64748B', fontSize: 10 },
+        axisLabel: { color: isDark ? '#94A3B8' : '#64748B', fontSize: 10 },
+        splitLine: { lineStyle: { color: isDark ? '#1E293B' : '#F1F5F9' } },
         scale: true,
       },
       dataZoom: isIndia
@@ -314,10 +318,10 @@ export const InvestigationPanel: React.FC<Props> = ({
               show: true,
               bottom: 4,
               height: 16,
-              borderColor: '#E2E8F0',
-              backgroundColor: '#F8FAFC',
-              fillerColor: 'rgba(5, 150, 105, 0.2)',
-              textStyle: { color: '#64748B', fontSize: 9 },
+              borderColor: isDark ? '#334155' : '#E2E8F0',
+              backgroundColor: isDark ? '#1E293B' : '#F8FAFC',
+              fillerColor: 'rgba(5, 150, 105, 0.25)',
+              textStyle: { color: isDark ? '#94A3B8' : '#64748B', fontSize: 9 },
             },
           ],
       series: [
@@ -354,7 +358,7 @@ export const InvestigationPanel: React.FC<Props> = ({
             },
       ],
     };
-  }, [chartData, data, isIndia]);
+  }, [chartData, data, isIndia, isDark]);
 
   // Build geographic identity string
   const geoBreadcrumb = [
@@ -379,14 +383,14 @@ export const InvestigationPanel: React.FC<Props> = ({
       tabIndex={-1}
       role="dialog"
       aria-label={`Investigation panel for ${site.candidate_site_id}`}
-      className="absolute top-0 right-0 z-20 flex h-full flex-col border-l border-[#E5E0D4] bg-[#FCFBF8]/95 backdrop-blur-2xl shadow-2xl animate-fade-in text-slate-800"
+      className="absolute top-0 right-0 z-20 flex h-full flex-col border-l border-[#E5E0D4] dark:border-slate-800 bg-[#FCFBF8]/95 dark:bg-slate-950/95 backdrop-blur-2xl shadow-2xl animate-fade-in text-slate-800 dark:text-slate-100"
       style={{ width: 'min(48rem, 92vw)' }}
     >
       {/* ── Top Header Bar ── */}
-      <div className="border-b border-[#E5E0D4] bg-white/90 p-5">
+      <div className="border-b border-[#E5E0D4] dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-5">
         {/* Navigation & Warning Switcher Bar */}
         {(onReturnToOverview || onSelectAlertSite) && (
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
             {onReturnToOverview && (
               <button
                 type="button"
@@ -406,7 +410,7 @@ export const InvestigationPanel: React.FC<Props> = ({
                 <select
                   value={site.candidate_site_id}
                   onChange={e => onSelectAlertSite(e.target.value)}
-                  className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-800 shadow-2xs focus:border-emerald-500 focus:outline-none"
+                  className="rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 text-xs font-medium text-slate-800 dark:text-slate-100 shadow-2xs focus:border-emerald-500 focus:outline-none"
                   aria-label="Quick jump between alert locations"
                 >
                   <option value={site.candidate_site_id}>Current: {site.station_name || site.candidate_site_id}</option>
@@ -424,7 +428,7 @@ export const InvestigationPanel: React.FC<Props> = ({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 border border-slate-200">
+              <span className="rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                 {isIndia ? 'Historical Monitoring Site' : 'Digital Water Level Telemetry (DWLR)'}
               </span>
               {condition && <ConditionBadge state={condition.condition_state} />}
@@ -432,16 +436,16 @@ export const InvestigationPanel: React.FC<Props> = ({
             </div>
 
             <div className="pt-1 flex flex-wrap items-baseline gap-2">
-              <h2 className="font-heading text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+              <h2 className="font-heading text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                 {site.station_name || site.candidate_site_id}
               </h2>
-              <span className="font-mono text-xs text-slate-500 font-medium">
+              <span className="font-mono text-xs text-slate-500 dark:text-slate-400 font-medium">
                 [{site.candidate_site_id}]
               </span>
             </div>
 
             {geoBreadcrumb && (
-              <div className="flex items-center gap-1.5 text-xs text-slate-600">
+              <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
                 <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" aria-hidden="true" />
                 <span className="truncate">{geoBreadcrumb}</span>
               </div>

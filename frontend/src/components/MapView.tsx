@@ -1,9 +1,10 @@
 import { useMemo, useCallback, useRef, useState, useEffect } from 'react';
-import Map, { Source, Layer } from 'react-map-gl/maplibre';
+import Map, { Source, Layer, NavigationControl } from 'react-map-gl/maplibre';
 import type { MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { CandidateSite } from '../services/api';
-import { Layers } from 'lucide-react';
+import { Layers, ZoomIn, ZoomOut, RotateCcw, MapPin, Crosshair, Globe } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 export type MapLayerType = 'condition' | 'alert' | 'drought' | 'flood' | 'stress';
 
@@ -17,6 +18,55 @@ interface MapViewProps {
 }
 
 const CARTO_DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const CARTO_LIGHT_STYLE = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
+
+export const MAHARASHTRA_DISTRICTS = [
+  { name: 'All Maharashtra', coords: [75.71, 19.75] as [number, number], zoom: 6.8 },
+  { name: 'Ahmednagar (Ahilyanagar)', coords: [74.7496, 19.0948] as [number, number], zoom: 9.5 },
+  { name: 'Akola', coords: [77.0082, 20.7002] as [number, number], zoom: 10 },
+  { name: 'Amravati', coords: [77.7523, 20.9374] as [number, number], zoom: 10 },
+  { name: 'Chhatrapati Sambhajinagar', coords: [75.3433, 19.8762] as [number, number], zoom: 10 },
+  { name: 'Beed', coords: [75.7554, 18.9891] as [number, number], zoom: 10 },
+  { name: 'Bhandara', coords: [79.6545, 21.1681] as [number, number], zoom: 10 },
+  { name: 'Buldhana', coords: [76.1804, 20.5292] as [number, number], zoom: 10 },
+  { name: 'Chandrapur', coords: [79.2961, 19.9615] as [number, number], zoom: 10 },
+  { name: 'Dhule', coords: [74.7749, 20.9042] as [number, number], zoom: 10 },
+  { name: 'Gadchiroli', coords: [80.0039, 20.1809] as [number, number], zoom: 9.5 },
+  { name: 'Gondia', coords: [80.1961, 21.4598] as [number, number], zoom: 10 },
+  { name: 'Hingoli', coords: [77.1408, 19.7173] as [number, number], zoom: 10 },
+  { name: 'Jalgaon', coords: [75.5626, 21.0077] as [number, number], zoom: 10 },
+  { name: 'Jalna', coords: [75.8830, 19.8410] as [number, number], zoom: 10 },
+  { name: 'Kolhapur', coords: [74.2433, 16.7050] as [number, number], zoom: 10 },
+  { name: 'Latur', coords: [76.5604, 18.4088] as [number, number], zoom: 10 },
+  { name: 'Mumbai City & Suburban', coords: [72.8777, 19.0760] as [number, number], zoom: 10.5 },
+  { name: 'Nagpur', coords: [79.0882, 21.1458] as [number, number], zoom: 10 },
+  { name: 'Nanded', coords: [77.3197, 19.1383] as [number, number], zoom: 10 },
+  { name: 'Nandurbar', coords: [74.2372, 21.3688] as [number, number], zoom: 10 },
+  { name: 'Nashik', coords: [73.7898, 19.9975] as [number, number], zoom: 10 },
+  { name: 'Dharashiv (Osmanabad)', coords: [76.0423, 18.1861] as [number, number], zoom: 10 },
+  { name: 'Palghar', coords: [72.7689, 19.6967] as [number, number], zoom: 10 },
+  { name: 'Parbhani', coords: [76.7748, 19.2610] as [number, number], zoom: 10 },
+  { name: 'Pune', coords: [73.8567, 18.5204] as [number, number], zoom: 10 },
+  { name: 'Raigad', coords: [73.1812, 18.5158] as [number, number], zoom: 10 },
+  { name: 'Ratnagiri', coords: [73.3120, 16.9902] as [number, number], zoom: 10 },
+  { name: 'Sangli', coords: [74.5815, 16.8524] as [number, number], zoom: 10 },
+  { name: 'Satara', coords: [73.9903, 17.6805] as [number, number], zoom: 10 },
+  { name: 'Sindhudurg', coords: [73.7142, 16.1158] as [number, number], zoom: 10 },
+  { name: 'Solapur', coords: [75.9064, 17.6599] as [number, number], zoom: 10 },
+  { name: 'Thane', coords: [72.9781, 19.2183] as [number, number], zoom: 10 },
+  { name: 'Wardha', coords: [78.6022, 20.7453] as [number, number], zoom: 10 },
+  { name: 'Washim', coords: [77.1352, 20.1118] as [number, number], zoom: 10 },
+  { name: 'Yavatmal', coords: [78.1232, 20.3888] as [number, number], zoom: 10 },
+];
+
+export const INDIA_REGIONS = [
+  { name: 'All India View', coords: [78.9629, 20.5937] as [number, number], zoom: 4.2 },
+  { name: 'North India (Delhi, Punjab, Haryana, UP)', coords: [77.2090, 28.6139] as [number, number], zoom: 6.2 },
+  { name: 'West India (Maharashtra, Gujarat, Rajasthan)', coords: [74.5000, 21.0000] as [number, number], zoom: 6.2 },
+  { name: 'South India (Karnataka, AP, Telangana, TN)', coords: [77.5946, 14.5000] as [number, number], zoom: 6.2 },
+  { name: 'East India (Bihar, West Bengal, Odisha)', coords: [85.5000, 23.5000] as [number, number], zoom: 6.2 },
+  { name: 'Central India (Madhya Pradesh, Chhattisgarh)', coords: [78.5000, 22.5000] as [number, number], zoom: 6.2 },
+];
 
 export const INDIA_CONDITION_COLORS = {
   EXTREMELY_LOW: '#dc2626',      // deep red
@@ -167,8 +217,73 @@ const STRESS_LEGEND = [
 
 export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, onBoundsChange, selectedSiteId, selectedSite }) => {
   const mapRef = useRef<MapRef>(null);
+  const { isDark } = useTheme();
   const [activeLayer, setActiveLayer] = useState<MapLayerType>('condition');
   const [isLayerMenuOpen, setIsLayerMenuOpen] = useState(false);
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('');
+
+  // Initial center depending on dataset
+  const initialCenter = useMemo(() => {
+    return dataset === 'india' ? { longitude: 79.0, latitude: 21.0, zoom: 4.2 } : { longitude: 75.71, latitude: 19.75, zoom: 6.8 };
+  }, [dataset]);
+
+  // Reset district dropdown when dataset flips
+  useEffect(() => {
+    setSelectedDistrict('');
+  }, [dataset]);
+
+  // Smooth camera control helper
+  const flyToCoords = useCallback((coords: [number, number], zoom: number) => {
+    if (!mapRef.current) return;
+    const map = mapRef.current.getMap?.() ?? (mapRef.current as any);
+    if (map && typeof map.flyTo === 'function') {
+      map.flyTo({
+        center: coords,
+        zoom,
+        duration: 900,
+        essential: true,
+      });
+    }
+  }, []);
+
+  const handleZoomIn = useCallback(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current.getMap?.() ?? (mapRef.current as any);
+    if (map && typeof map.zoomIn === 'function') {
+      map.zoomIn({ duration: 300 });
+    }
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current.getMap?.() ?? (mapRef.current as any);
+    if (map && typeof map.zoomOut === 'function') {
+      map.zoomOut({ duration: 300 });
+    }
+  }, []);
+
+  const handleResetView = useCallback(() => {
+    setSelectedDistrict('');
+    if (dataset === 'india') {
+      flyToCoords([78.9629, 20.5937], 4.2);
+    } else {
+      flyToCoords([75.71, 19.75], 6.8);
+    }
+  }, [dataset, flyToCoords]);
+
+  const handleDistrictChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedDistrict(val);
+    if (!val) return;
+
+    if (dataset === 'maharashtra') {
+      const match = MAHARASHTRA_DISTRICTS.find(d => d.name === val);
+      if (match) flyToCoords(match.coords, match.zoom);
+    } else {
+      const match = INDIA_REGIONS.find(r => r.name === val);
+      if (match) flyToCoords(match.coords, match.zoom);
+    }
+  }, [dataset, flyToCoords]);
 
   // Automatically fly to selected site when selectedSite or selectedSiteId changes
   useEffect(() => {
@@ -181,12 +296,13 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
           const currentZoom = typeof map.getZoom === 'function' ? map.getZoom() : 5;
           map.flyTo({
             center: [target.longitude, target.latitude],
-            zoom: Math.max(currentZoom, 10),
-            duration: 1200
+            zoom: Math.max(currentZoom, 10.5),
+            duration: 1100,
+            essential: true
           });
         }
       } catch {
-        // Safe guard if map is still mounting
+        // Safe guard if map is mounting
       }
     }
   }, [selectedSiteId, selectedSite, sites]);
@@ -221,19 +337,47 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
     };
   }, [sites, selectedSiteId, selectedSite]);
 
+  // Interactive click: cluster expansion or station inspection
   const onClick = useCallback((event: any) => {
     const feature = event.features?.[0];
-    if (feature?.layer.id === 'unclustered-point') {
+    if (!feature) return;
+
+    if (feature.layer.id === 'clusters') {
+      const clusterId = feature.properties?.cluster_id;
+      const map = mapRef.current?.getMap?.() ?? (mapRef.current as any);
+      if (!map) return;
+      const source = map.getSource('sites') as any;
+      if (source && typeof source.getClusterExpansionZoom === 'function') {
+        source.getClusterExpansionZoom(clusterId, (err: any, zoom: number) => {
+          if (err) return;
+          map.easeTo({
+            center: feature.geometry.coordinates,
+            zoom: Math.min(zoom + 0.6, 15.5),
+            duration: 600,
+            essential: true
+          });
+        });
+      }
+      return;
+    }
+
+    if (feature.layer.id === 'unclustered-point') {
       onSiteSelect(feature.properties as CandidateSite);
     }
   }, [onSiteSelect]);
 
   const onMouseEnter = useCallback(() => {
-    if (mapRef.current) mapRef.current.getMap().getCanvas().style.cursor = 'pointer';
+    if (mapRef.current) {
+      const map = mapRef.current.getMap?.() ?? (mapRef.current as any);
+      if (map?.getCanvas) map.getCanvas().style.cursor = 'pointer';
+    }
   }, []);
 
   const onMouseLeave = useCallback(() => {
-    if (mapRef.current) mapRef.current.getMap().getCanvas().style.cursor = '';
+    if (mapRef.current) {
+      const map = mapRef.current.getMap?.() ?? (mapRef.current as any);
+      if (map?.getCanvas) map.getCanvas().style.cursor = '';
+    }
   }, []);
 
   const getActiveExpression = () => {
@@ -265,16 +409,17 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
   const legend = getActiveLegend();
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative overflow-hidden">
       <Map
         ref={mapRef}
-        initialViewState={{ longitude: 79.0, latitude: 21.0, zoom: 4 }}
-        mapStyle={CARTO_DARK_STYLE}
-        interactiveLayerIds={['unclustered-point']}
+        initialViewState={initialCenter}
+        mapStyle={isDark ? CARTO_DARK_STYLE : CARTO_LIGHT_STYLE}
+        interactiveLayerIds={['clusters', 'unclustered-point']}
         onClick={onClick}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         onMoveEnd={handleMoveEnd}
+        reuseMaps={true}
       >
         <Source
           id="sites"
@@ -298,8 +443,8 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
               ],
               'circle-radius': ['step', ['get', 'point_count'], 16, 100, 24, 750, 34],
               'circle-opacity': 0.9,
-              'circle-stroke-width': 1,
-              'circle-stroke-color': 'rgba(255,255,255,0.2)'
+              'circle-stroke-width': 1.5,
+              'circle-stroke-color': 'rgba(255,255,255,0.4)'
             }}
           />
           {/* Cluster count labels */}
@@ -321,9 +466,9 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
             filter={['all', ['!', ['has', 'point_count']], ['==', ['get', 'selected'], true]]}
             paint={{
               'circle-color': 'transparent',
-              'circle-radius': 12,
-              'circle-stroke-width': 2,
-              'circle-stroke-color': '#34d399'
+              'circle-radius': 14,
+              'circle-stroke-width': 2.5,
+              'circle-stroke-color': '#10B981'
             }}
           />
           {/* Unclustered individual points - state colored */}
@@ -333,57 +478,144 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
             filter={['!', ['has', 'point_count']]}
             paint={{
               'circle-color': getActiveExpression(),
-              'circle-radius': ['case', ['==', ['get', 'selected'], true], 7, 5],
-              'circle-stroke-width': ['case', ['==', ['get', 'selected'], true], 2, 1],
-              'circle-stroke-color': ['case', ['==', ['get', 'selected'], true], '#ffffff', 'rgba(255,255,255,0.6)']
+              'circle-radius': ['case', ['==', ['get', 'selected'], true], 7.5, 5.5],
+              'circle-stroke-width': ['case', ['==', ['get', 'selected'], true], 2.5, 1],
+              'circle-stroke-color': ['case', ['==', ['get', 'selected'], true], '#ffffff', 'rgba(255,255,255,0.7)']
             }}
           />
         </Source>
+
+        {/* Native Navigation Control with Compass */}
+        <NavigationControl position="bottom-right" showCompass={true} visualizePitch={true} />
       </Map>
 
-      {/* Map Layer Control */}
+      {/* ── Floating Fast Zoom & Quick Navigation Toolbar (Top-Left) ── */}
+      <div className="absolute top-4 left-4 z-10 pointer-events-auto flex flex-wrap items-center gap-2">
+        {/* Quick Zoom Presets */}
+        <div className="glass-panel flex items-center gap-1 rounded-xl p-1 shadow-lg">
+          <button
+            type="button"
+            onClick={() => flyToCoords([75.71, 19.75], 6.8)}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-text-primary hover:bg-glass-bg-hover hover:text-emerald-400 transition-all focus:outline-none"
+            title="Focus on Maharashtra telemetry view"
+          >
+            <Crosshair className="h-3.5 w-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">Maharashtra</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => flyToCoords([78.9629, 20.5937], 4.2)}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-text-primary hover:bg-glass-bg-hover hover:text-blue-400 transition-all focus:outline-none"
+            title="Focus on All-India overview"
+          >
+            <Globe className="h-3.5 w-3.5 text-blue-400" />
+            <span className="hidden sm:inline">India</span>
+          </button>
+        </div>
+
+        {/* District / Regional Quick Jump Dropdown */}
+        <div className="glass-panel flex items-center gap-1.5 rounded-xl px-2.5 py-1 shadow-lg">
+          <MapPin className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+          <select
+            value={selectedDistrict}
+            onChange={handleDistrictChange}
+            className="bg-transparent text-xs font-medium text-text-primary focus:outline-none cursor-pointer py-1 pr-1 max-w-[11rem] sm:max-w-[14rem]"
+            aria-label="Quick jump to district or region"
+          >
+            <option value="" className="bg-surface-raised text-text-primary">
+              {dataset === 'maharashtra' ? '⚡ Quick Jump District…' : '⚡ Quick Jump Region…'}
+            </option>
+            {dataset === 'maharashtra'
+              ? MAHARASHTRA_DISTRICTS.map(d => (
+                  <option key={d.name} value={d.name} className="bg-surface-raised text-text-primary">
+                    {d.name}
+                  </option>
+                ))
+              : INDIA_REGIONS.map(r => (
+                  <option key={r.name} value={r.name} className="bg-surface-raised text-text-primary">
+                    {r.name}
+                  </option>
+                ))}
+          </select>
+        </div>
+
+        {/* Step Zoom (+ / -) & Reset Controls */}
+        <div className="glass-panel flex items-center rounded-xl p-1 shadow-lg">
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            className="rounded-lg p-1.5 text-text-primary hover:bg-glass-bg-hover hover:text-emerald-400 transition-all focus:outline-none"
+            title="Step Zoom In (+)"
+            aria-label="Zoom in"
+          >
+            <ZoomIn className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            className="rounded-lg p-1.5 text-text-primary hover:bg-glass-bg-hover hover:text-emerald-400 transition-all focus:outline-none"
+            title="Step Zoom Out (-)"
+            aria-label="Zoom out"
+          >
+            <ZoomOut className="h-3.5 w-3.5" />
+          </button>
+          <div className="h-3.5 w-px bg-glass-border mx-0.5" />
+          <button
+            type="button"
+            onClick={handleResetView}
+            className="rounded-lg p-1.5 text-text-muted hover:bg-glass-bg-hover hover:text-text-primary transition-all focus:outline-none"
+            title="Reset View"
+            aria-label="Reset map view"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Map Layer Control (Top-Right) ── */}
       <div className="absolute top-4 right-4 z-10 pointer-events-auto">
         <div className="relative">
           <button 
             onClick={() => setIsLayerMenuOpen(!isLayerMenuOpen)}
-            className="glass-panel flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-text-primary hover:bg-glass-bg-hover transition-colors focus-visible:outline-none focus-glow"
+            className="glass-panel flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-text-primary hover:bg-glass-bg-hover transition-colors focus-visible:outline-none focus-glow shadow-lg cursor-pointer"
           >
             <Layers className="w-4 h-4 text-emerald-400" />
             <span>Map Layer</span>
           </button>
           
           {isLayerMenuOpen && (
-            <div className="absolute top-full right-0 mt-2 w-56 glass-panel rounded-xl py-1 overflow-hidden">
+            <div className="absolute top-full right-0 mt-2 w-56 glass-panel rounded-xl py-1 overflow-hidden shadow-2xl">
               <div className="border-b border-glass-border bg-surface-elevated/50 px-3 py-1.5 text-[10px] font-semibold uppercase text-text-muted">
                 Intelligence Layers
               </div>
               <button
                 onClick={() => { setActiveLayer('condition'); setIsLayerMenuOpen(false); }}
-                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'condition' ? 'bg-emerald-500/15 text-emerald-400' : 'text-text-secondary'}`}
+                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'condition' ? 'bg-emerald-500/15 text-emerald-400 font-bold' : 'text-text-secondary'}`}
               >
                 Groundwater Condition
               </button>
               <button
                 onClick={() => { setActiveLayer('alert'); setIsLayerMenuOpen(false); }}
-                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'alert' ? 'bg-emerald-500/15 text-emerald-400' : 'text-text-secondary'}`}
+                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'alert' ? 'bg-emerald-500/15 text-emerald-400 font-bold' : 'text-text-secondary'}`}
               >
                 Statistical Alerts
               </button>
               <button
                 onClick={() => { setActiveLayer('drought'); setIsLayerMenuOpen(false); }}
-                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'drought' ? 'bg-emerald-500/15 text-emerald-400' : 'text-text-secondary'}`}
+                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'drought' ? 'bg-emerald-500/15 text-emerald-400 font-bold' : 'text-text-secondary'}`}
               >
                 Drought Intelligence
               </button>
               <button
                 onClick={() => { setActiveLayer('flood'); setIsLayerMenuOpen(false); }}
-                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'flood' ? 'bg-emerald-500/15 text-emerald-400' : 'text-text-secondary'}`}
+                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'flood' ? 'bg-emerald-500/15 text-emerald-400 font-bold' : 'text-text-secondary'}`}
               >
                 Flood Potential
               </button>
               <button
                 onClick={() => { setActiveLayer('stress'); setIsLayerMenuOpen(false); }}
-                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'stress' ? 'bg-emerald-500/15 text-emerald-400' : 'text-text-secondary'}`}
+                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'stress' ? 'bg-emerald-500/15 text-emerald-400 font-bold' : 'text-text-secondary'}`}
               >
                 Groundwater Stress
               </button>
@@ -392,9 +624,9 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
         </div>
       </div>
 
-      {/* Map Legend */}
+      {/* ── Map Legend (Bottom-Left) ── */}
       <div 
-        className="absolute bottom-6 left-4 z-10 max-w-xs glass-panel rounded-xl p-3 text-xs pointer-events-auto"
+        className="absolute bottom-6 left-4 z-10 max-w-xs glass-panel rounded-xl p-3 text-xs pointer-events-auto shadow-lg"
         data-testid="map-legend"
       >
         <div className="mb-2 text-[10px] font-semibold uppercase text-text-muted">
@@ -415,10 +647,10 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
           ))}
         </div>
       </div>
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 glass-panel rounded-lg px-3 py-1 text-[9px] text-text-muted pointer-events-none">
+
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 glass-panel rounded-lg px-3 py-1 text-[9px] text-text-muted pointer-events-none hidden sm:block">
         Candidate site coordinates are historically unverified and may exhibit geospatial artifacts.
       </div>
     </div>
   );
 };
-

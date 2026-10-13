@@ -22,6 +22,7 @@ import {
   type MapForecastSite,
   type ModelInfo,
 } from '../services/advancedForecastApi';
+import { useTheme } from '../context/ThemeContext';
 
 interface Props {
   initialSiteId?: string;
@@ -51,6 +52,7 @@ const CONDITION_COLORS: Record<string, string> = {
 };
 
 export function AdvancedForecastTab({ initialSiteId }: Props) {
+  const { isDark } = useTheme();
   // Inputs
   const [siteId, setSiteId] = useState(initialSiteId || 'MH_AALEGAON');
   const [siteInput, setSiteInput] = useState(initialSiteId || 'MH_AALEGAON');
@@ -75,7 +77,7 @@ export function AdvancedForecastTab({ initialSiteId }: Props) {
   const [mapModel, setMapModel] = useState<string>('seasonal_harmonic');
 
   // Model benchmark metadata
-  const [modelInfo, setModelInfo] = useState<Record<string, ModelInfo> | null>(null);
+  const [, setModelInfo] = useState<Record<string, ModelInfo> | null>(null);
 
 
   // Load model benchmark metadata once
@@ -286,27 +288,29 @@ export function AdvancedForecastTab({ initialSiteId }: Props) {
     }
 
     return {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: isDark ? 'transparent' : '#FFFFFF',
       title: {
         text: `Long-Horizon Water Level Projections — ${forecastData.station_name || forecastData.site_id}`,
         subtext: `Origin: ${forecastData.origin_date} (${forecastData.origin_water_level}m) → Target: ${forecastData.target_date} (${forecastData.horizon_days} days ahead) | Scenario: ${forecastData.scenario.toUpperCase()}`,
         left: 'left',
-        textStyle: { fontSize: 14, fontWeight: '700', color: '#1E293B' },
-        subtextStyle: { fontSize: 11, color: '#64748B' },
+        textStyle: { fontSize: 14, fontWeight: '700', color: isDark ? '#F8FAFC' : '#1E293B' },
+        subtextStyle: { fontSize: 11, color: isDark ? '#94A3B8' : '#64748B' },
       },
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'cross' },
-        backgroundColor: '#FFFFFF',
-        borderColor: '#E5E0D4',
+        backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+        borderColor: isDark ? '#334155' : '#E5E0D4',
         borderWidth: 1,
-        textStyle: { color: '#1E293B', fontSize: 12 },
-        extraCssText: 'box-shadow: 0 4px 14px rgba(0,0,0,0.08); border-radius: 8px;',
+        textStyle: { color: isDark ? '#F8FAFC' : '#1E293B', fontSize: 12 },
+        extraCssText: isDark
+          ? 'box-shadow: 0 4px 14px rgba(0,0,0,0.5); border-radius: 8px;'
+          : 'box-shadow: 0 4px 14px rgba(0,0,0,0.08); border-radius: 8px;',
       },
       legend: {
         top: 36,
         right: 'right',
-        textStyle: { fontSize: 11, color: '#475569' },
+        textStyle: { fontSize: 11, color: isDark ? '#CBD5E1' : '#475569' },
       },
       grid: {
         left: '3%',
@@ -318,19 +322,19 @@ export function AdvancedForecastTab({ initialSiteId }: Props) {
       xAxis: {
         type: 'time',
         boundaryGap: false,
-        axisLine: { lineStyle: { color: '#E5E0D4' } },
-        axisLabel: { color: '#64748B', fontSize: 11 },
+        axisLine: { lineStyle: { color: isDark ? '#334155' : '#E5E0D4' } },
+        axisLabel: { color: isDark ? '#94A3B8' : '#64748B', fontSize: 11 },
       },
       yAxis: {
         type: 'value',
         name: `Water Level (${forecastData.water_level_unit})`,
-        nameTextStyle: { color: '#64748B', fontSize: 11 },
-        splitLine: { lineStyle: { color: '#F1EFE9' } },
-        axisLabel: { color: '#64748B', fontSize: 11 },
+        nameTextStyle: { color: isDark ? '#94A3B8' : '#64748B', fontSize: 11 },
+        splitLine: { lineStyle: { color: isDark ? '#1E293B' : '#F1EFE9' } },
+        axisLabel: { color: isDark ? '#94A3B8' : '#64748B', fontSize: 11 },
       },
       series,
     };
-  }, [forecastData, selectedModels]);
+  }, [forecastData, selectedModels, isDark]);
 
   const mapRef = useRef<MapRef>(null);
 
