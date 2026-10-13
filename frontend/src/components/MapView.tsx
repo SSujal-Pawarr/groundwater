@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef, useState } from 'react';
+import { useMemo, useCallback, useRef, useState, useEffect } from 'react';
 import Map, { Source, Layer } from 'react-map-gl/maplibre';
 import type { MapRef } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -11,11 +11,11 @@ interface MapViewProps {
   sites: CandidateSite[];
   dataset: 'india' | 'maharashtra';
   selectedSiteId: string | null;
+  selectedSite?: CandidateSite | null;
   onSiteSelect: (site: CandidateSite) => void;
   onBoundsChange: (bounds: { min_lat: number; max_lat: number; min_lng: number; max_lng: number }) => void;
 }
 
-// Carto dark-matter for a proper command-center aesthetic
 const CARTO_DARK_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 export const INDIA_CONDITION_COLORS = {
@@ -165,10 +165,31 @@ const STRESS_LEGEND = [
   { label: 'Insufficient Evidence', color: STRESS_COLORS.INSUFFICIENT_EVIDENCE },
 ];
 
-export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, onBoundsChange, selectedSiteId }) => {
+export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, onBoundsChange, selectedSiteId, selectedSite }) => {
   const mapRef = useRef<MapRef>(null);
   const [activeLayer, setActiveLayer] = useState<MapLayerType>('condition');
   const [isLayerMenuOpen, setIsLayerMenuOpen] = useState(false);
+
+  // Automatically fly to selected site when selectedSite or selectedSiteId changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const target = selectedSite || sites.find(s => s.candidate_site_id === selectedSiteId);
+    if (target && target.longitude != null && target.latitude != null && target.longitude !== 0 && target.latitude !== 0) {
+      try {
+        const map = mapRef.current.getMap?.() ?? (mapRef.current as any);
+        if (map && typeof map.flyTo === 'function') {
+          const currentZoom = typeof map.getZoom === 'function' ? map.getZoom() : 5;
+          map.flyTo({
+            center: [target.longitude, target.latitude],
+            zoom: Math.max(currentZoom, 10),
+            duration: 1200
+          });
+        }
+      } catch {
+        // Safe guard if map is still mounting
+      }
+    }
+  }, [selectedSiteId, selectedSite, sites]);
 
   const handleMoveEnd = useCallback(() => {
     if (mapRef.current) {
@@ -182,17 +203,23 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
     }
   }, [onBoundsChange]);
 
-  // Build GeoJSON — invalid coords filtered
-  const geojson = useMemo(() => ({
-    type: 'FeatureCollection' as const,
-    features: sites
-      .filter(s => s.latitude != null && s.longitude != null && s.latitude !== 0 && s.longitude !== 0)
-      .map(site => ({
-        type: 'Feature' as const,
-        geometry: { type: 'Point' as const, coordinates: [site.longitude!, site.latitude!] },
-        properties: { id: site.candidate_site_id, selected: site.candidate_site_id === selectedSiteId, ...site }
-      }))
-  }), [sites, selectedSiteId]);
+  // Build GeoJSON — invalid coords filtered and selectedSite guaranteed
+  const geojson = useMemo(() => {
+    const list = [...sites];
+    if (selectedSite && !list.some(s => s.candidate_site_id === selectedSite.candidate_site_id)) {
+      list.push(selectedSite);
+    }
+    return {
+      type: 'FeatureCollection' as const,
+      features: list
+        .filter(s => s.latitude != null && s.longitude != null && s.latitude !== 0 && s.longitude !== 0)
+        .map(site => ({
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: [site.longitude!, site.latitude!] },
+          properties: { id: site.candidate_site_id, selected: site.candidate_site_id === selectedSiteId, ...site }
+        }))
+    };
+  }, [sites, selectedSiteId, selectedSite]);
 
   const onClick = useCallback((event: any) => {
     const feature = event.features?.[0];
@@ -257,7 +284,7 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
           clusterMaxZoom={14}
           clusterRadius={50}
         >
-          {/* Cluster circles - strictly neutral blue */}
+          {/* Cluster circles use the dashboard's primary green accent. */}
           <Layer
             id="clusters"
             type="circle"
@@ -265,14 +292,14 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
             paint={{
               'circle-color': [
                 'step', ['get', 'point_count'],
-                '#334155',   // < 10
-                10, '#1e40af',  // 10–99
-                100, '#1d4ed8', // 100+
+                '#059669',
+                10, '#047857',
+                100, '#065f46',
               ],
               'circle-radius': ['step', ['get', 'point_count'], 16, 100, 24, 750, 34],
-              'circle-opacity': 0.85,
+              'circle-opacity': 0.9,
               'circle-stroke-width': 1,
-              'circle-stroke-color': '#475569'
+              'circle-stroke-color': 'rgba(255,255,255,0.2)'
             }}
           />
           {/* Cluster count labels */}
@@ -285,7 +312,7 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
               'text-size': 11,
               'text-font': ['Noto Sans Regular']
             }}
-            paint={{ 'text-color': '#cbd5e1' }}
+            paint={{ 'text-color': '#ffffff' }}
           />
           {/* Selected marker halo */}
           <Layer
@@ -296,7 +323,7 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
               'circle-color': 'transparent',
               'circle-radius': 12,
               'circle-stroke-width': 2,
-              'circle-stroke-color': '#60a5fa'
+              'circle-stroke-color': '#34d399'
             }}
           />
           {/* Unclustered individual points - state colored */}
@@ -319,44 +346,44 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
         <div className="relative">
           <button 
             onClick={() => setIsLayerMenuOpen(!isLayerMenuOpen)}
-            className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-slate-800 px-3 py-2 rounded-lg shadow-xl text-xs font-medium text-slate-200 hover:bg-slate-800 transition-colors focus:outline-none"
+            className="glass-panel flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-text-primary hover:bg-glass-bg-hover transition-colors focus-visible:outline-none focus-glow"
           >
-            <Layers className="w-4 h-4 text-blue-400" />
+            <Layers className="w-4 h-4 text-emerald-400" />
             <span>Map Layer</span>
           </button>
           
           {isLayerMenuOpen && (
-            <div className="absolute top-full right-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl py-1 overflow-hidden">
-              <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 bg-slate-950/50">
+            <div className="absolute top-full right-0 mt-2 w-56 glass-panel rounded-xl py-1 overflow-hidden">
+              <div className="border-b border-glass-border bg-surface-elevated/50 px-3 py-1.5 text-[10px] font-semibold uppercase text-text-muted">
                 Intelligence Layers
               </div>
               <button
                 onClick={() => { setActiveLayer('condition'); setIsLayerMenuOpen(false); }}
-                className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-800 transition-colors ${activeLayer === 'condition' ? 'text-blue-400 bg-blue-900/10' : 'text-slate-300'}`}
+                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'condition' ? 'bg-emerald-500/15 text-emerald-400' : 'text-text-secondary'}`}
               >
                 Groundwater Condition
               </button>
               <button
                 onClick={() => { setActiveLayer('alert'); setIsLayerMenuOpen(false); }}
-                className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-800 transition-colors ${activeLayer === 'alert' ? 'text-blue-400 bg-blue-900/10' : 'text-slate-300'}`}
+                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'alert' ? 'bg-emerald-500/15 text-emerald-400' : 'text-text-secondary'}`}
               >
                 Statistical Alerts
               </button>
               <button
                 onClick={() => { setActiveLayer('drought'); setIsLayerMenuOpen(false); }}
-                className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-800 transition-colors ${activeLayer === 'drought' ? 'text-blue-400 bg-blue-900/10' : 'text-slate-300'}`}
+                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'drought' ? 'bg-emerald-500/15 text-emerald-400' : 'text-text-secondary'}`}
               >
                 Drought Intelligence
               </button>
               <button
                 onClick={() => { setActiveLayer('flood'); setIsLayerMenuOpen(false); }}
-                className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-800 transition-colors ${activeLayer === 'flood' ? 'text-blue-400 bg-blue-900/10' : 'text-slate-300'}`}
+                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'flood' ? 'bg-emerald-500/15 text-emerald-400' : 'text-text-secondary'}`}
               >
                 Flood Potential
               </button>
               <button
                 onClick={() => { setActiveLayer('stress'); setIsLayerMenuOpen(false); }}
-                className={`w-full text-left px-3 py-2 text-xs hover:bg-slate-800 transition-colors ${activeLayer === 'stress' ? 'text-blue-400 bg-blue-900/10' : 'text-slate-300'}`}
+                className={`w-full px-3 py-2 text-left text-xs transition-colors hover:bg-glass-bg-hover ${activeLayer === 'stress' ? 'bg-emerald-500/15 text-emerald-400' : 'text-text-secondary'}`}
               >
                 Groundwater Stress
               </button>
@@ -367,28 +394,28 @@ export const MapView: React.FC<MapViewProps> = ({ sites, dataset, onSiteSelect, 
 
       {/* Map Legend */}
       <div 
-        className="absolute bottom-6 left-4 z-10 bg-slate-900/90 backdrop-blur-md border border-slate-800 p-2.5 rounded-lg shadow-xl text-xs max-w-xs pointer-events-auto"
+        className="absolute bottom-6 left-4 z-10 max-w-xs glass-panel rounded-xl p-3 text-xs pointer-events-auto"
         data-testid="map-legend"
       >
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+        <div className="mb-2 text-[10px] font-semibold uppercase text-text-muted">
           {legend.title}
         </div>
         <div className="space-y-1.5">
           {legend.items.map(item => (
             <div key={item.label} className="flex items-center gap-2">
               <span
-                className="w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ backgroundColor: item.color }}
+                className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
+                style={{ backgroundColor: item.color, boxShadow: `0 0 4px ${item.color}40` }}
                 aria-hidden="true"
               />
-              <span className="text-[11px] text-slate-300 leading-tight">
+              <span className="text-[11px] leading-tight text-text-secondary">
                 {item.label}
               </span>
             </div>
           ))}
         </div>
       </div>
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 px-3 py-1 text-[9px] text-slate-500 rounded-full pointer-events-none">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 glass-panel rounded-lg px-3 py-1 text-[9px] text-text-muted pointer-events-none">
         Candidate site coordinates are historically unverified and may exhibit geospatial artifacts.
       </div>
     </div>

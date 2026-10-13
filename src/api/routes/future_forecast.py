@@ -78,19 +78,39 @@ def list_future_forecasts(
 @router.get("/{region}/candidate-sites/{candidate_site_id}/future-forecast")
 def site_future_forecast(region: Region, candidate_site_id: str):
     df = _load(region)
+    if df is not None:
+        row = df[df["candidate_site_id"] == candidate_site_id]
+        if not row.empty:
+            out = _records(row.iloc[:1])[0]
+            probs = {k[len("prob_"):]: out.pop(k) for k in [k for k in list(out) if k.startswith("prob_")]}
+            out["predicted_condition_probabilities"] = probs
+            out["forecast_source"] = "direct_m17"
+            return out
+
+    # Some sites are excluded from the direct M17 artifact because their latest
+    # observation is stale. Use the precomputed chained estimate when available,
+    # while clearly marking its weaker no-recent-data semantics.
+    chained = _load_chain(region)
+    if chained is not None:
+        row = chained[chained["candidate_site_id"] == candidate_site_id]
+        if not row.empty:
+            out = _records(row.iloc[:1])[0]
+            probs = {k[len("prob_"):]: out.pop(k) for k in [k for k in list(out) if k.startswith("prob_")]}
+            out["predicted_condition_probabilities"] = probs
+            out["horizon_months"] = out.get("months_to_target", out.get("n_steps", 1) * out.get("step_months", 1))
+            out["target_date"] = out.get("predicted_for_date") or out.get("requested_target_date")
+            out["forecast_source"] = "chained_fallback"
+            out["forecast_method"] = out.get("method", "persistence_fallback")
+            out["forecast_reason"] = out.get("method_reason")
+            out["warnings"] = [warning for warning in (out.get("warnings") or "").split("; ") if warning]
+            return out
+
     if df is None:
         raise _not_generated(region)
-    row = df[df["candidate_site_id"] == candidate_site_id]
-    if row.empty:
-        raise HTTPException(
-            status_code=404,
-            detail="No future forecast for this site (its latest observation is too old to forecast from, "
-                   "or it has too little history).",
-        )
-    out = _records(row.iloc[:1])[0]
-    probs = {k[len("prob_"):]: out.pop(k) for k in [k for k in list(out) if k.startswith("prob_")]}
-    out["predicted_condition_probabilities"] = probs
-    return out
+    raise HTTPException(
+        status_code=404,
+        detail="No direct or chained forecast is available for this site (its observation history may be too old).",
+    )
 
 
 # ---------------------------------------------------------------------------

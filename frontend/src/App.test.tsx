@@ -26,6 +26,8 @@ vi.mock('echarts-for-react', () => ({
   default: () => <div data-testid="mock-echarts" />
 }));
 
+const openMapTab = () => fireEvent.click(screen.getByRole('tab', { name: 'Geospatial Map' }));
+
 describe('Groundwater Intelligence Command Center', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -69,6 +71,25 @@ describe('Groundwater Intelligence Command Center', () => {
     expect(screen.getByText(/Groundwater Intelligence Command Center/i)).toBeInTheDocument();
   });
 
+  test('MapView mounts only while the Geospatial Map tab is active', async () => {
+    render(<App />);
+    expect(screen.queryByTestId('mock-map')).not.toBeInTheDocument();
+
+    openMapTab();
+    expect(await screen.findByTestId('mock-map')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Predictive Analytics' }));
+    expect(screen.queryByTestId('mock-map')).not.toBeInTheDocument();
+  });
+
+  test('Primary tabs support arrow-key navigation', () => {
+    render(<App />);
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Overview Dashboard' }), { key: 'ArrowRight' });
+
+    expect(screen.getByRole('tab', { name: 'Geospatial Map' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('mock-map')).toBeInTheDocument();
+  });
+
   test('2, 3. Dataset selection works (India / Maharashtra)', async () => {
     vi.spyOn(api, 'fetchIndiaSites').mockResolvedValue([
       { candidate_site_id: 'IND-1', latitude: 20, longitude: 79 }
@@ -78,6 +99,7 @@ describe('Groundwater Intelligence Command Center', () => {
     ]);
 
     render(<App />);
+    openMapTab();
 
     expect(await screen.findByText(/Historical Candidate Sites/i)).toBeInTheDocument();
 
@@ -108,6 +130,7 @@ describe('Groundwater Intelligence Command Center', () => {
     ]);
 
     const { unmount } = render(<App />);
+    openMapTab();
     const indMarker = await screen.findByTestId('site-marker-IND-1');
     fireEvent.click(indMarker);
     expect(await screen.findByText('Historical Candidate Site')).toBeInTheDocument();
@@ -133,6 +156,7 @@ describe('Groundwater Intelligence Command Center', () => {
     ]);
 
     render(<App />);
+    openMapTab();
     fireEvent.click(screen.getByText(/Maharashtra Telemetry/i));
     const mhMarker = await screen.findByTestId('site-marker-MH-1');
     fireEvent.click(mhMarker);
@@ -155,6 +179,7 @@ describe('Groundwater Intelligence Command Center', () => {
     ]);
 
     render(<App />);
+    openMapTab();
     const marker = await screen.findByTestId('site-marker-IND-ALERTS');
     fireEvent.click(marker);
     // Alert label is now "Critical Statistical Deviation" (title-cased from ALERT_CONFIG)
@@ -186,6 +211,7 @@ describe('Groundwater Intelligence Command Center', () => {
     });
 
     render(<App />);
+    openMapTab();
     fireEvent.click(await screen.findByTestId('site-marker-IND-COND'));
     
     // Condition section
@@ -218,6 +244,7 @@ describe('Groundwater Intelligence Command Center', () => {
     });
 
     render(<App />);
+    openMapTab();
     fireEvent.click(await screen.findByTestId('site-marker-IND-COND-2'));
     
     expect(await screen.findByText('INSUFFICIENT HISTORY')).toBeInTheDocument();
@@ -241,6 +268,7 @@ describe('Groundwater Intelligence Command Center', () => {
     vi.spyOn(api, 'fetchIndiaCondition').mockRejectedValue(new Error('API Down'));
 
     render(<App />);
+    openMapTab();
     fireEvent.click(await screen.findByTestId('site-marker-IND-COND-FAIL'));
     
     expect(await screen.findByText('Condition unavailable')).toBeInTheDocument();
@@ -261,6 +289,7 @@ describe('Groundwater Intelligence Command Center', () => {
   test('13. Empty API response renders correct viewport message', async () => {
     vi.spyOn(api, 'fetchIndiaSites').mockResolvedValue([]);
     render(<App />);
+    openMapTab();
     // The count "0" is in its own span, then "sites in view" in a sibling span
     // Just check the count node appears and the label text is present
     const countEl = await screen.findByText('0');
@@ -292,6 +321,7 @@ describe('Groundwater Intelligence Command Center', () => {
       model_version: 'persistence-v1'
     });
     render(<App />);
+    openMapTab();
     fireEvent.click(screen.getByText(/Maharashtra Telemetry/i));
     fireEvent.click(await screen.findByTestId('site-marker-MH-1'));
 
@@ -316,6 +346,7 @@ describe('Groundwater Intelligence Command Center', () => {
     vi.spyOn(api, 'fetchMHForecast').mockRejectedValue(new Error('API Down'));
 
     render(<App />);
+    openMapTab();
     fireEvent.click(screen.getByText(/Maharashtra Telemetry/i));
     fireEvent.click(await screen.findByTestId('site-marker-MH-2'));
 
@@ -327,6 +358,7 @@ describe('Groundwater Intelligence Command Center', () => {
     vi.spyOn(api, 'fetchIndiaSites').mockResolvedValue([{ candidate_site_id: 'IND-1', latitude: 20, longitude: 79 }]);
     vi.spyOn(api, 'fetchIndiaAlerts').mockResolvedValue([]);
     render(<App />);
+    openMapTab();
     fireEvent.click(await screen.findByTestId('site-marker-IND-1'));
 
     expect(screen.queryByText('Next-Observation Forecast')).not.toBeInTheDocument();

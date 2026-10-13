@@ -1,0 +1,20 @@
+{
+  "model_type": "pytorch_lstm",
+  "region": "maharashtra",
+  "seq_len": 30,
+  "hidden": 128,
+  "num_layers": 2,
+  "data_through": "2026-05-30",
+  "test_metrics": {
+    "mae": 1.4466092586517334,
+    "rmse": 3.529139518737793,
+    "r2": 0.3113630414009094,
+    "n": 17265
+  },
+  "persist_metrics": {
+    "mae": 2.2158820629119873,
+    "rmse": 4.4356560707092285
+  },
+  "split_date": "2026-04-25",
+  "n_sites": 943
+}

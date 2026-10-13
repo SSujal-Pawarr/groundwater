@@ -47,6 +47,26 @@ data/processed/*
 !data/processed/.gitkeep
 data/features/*
 !data/features/.gitkeep
+data/alerts/*
+!data/alerts/.gitkeep
+data/conditions/*
+!data/conditions/.gitkeep
+data/drought_intelligence/*
+!data/drought_intelligence/.gitkeep
+data/flood_intelligence/*
+!data/flood_intelligence/.gitkeep
+data/stress_intelligence/*
+!data/stress_intelligence/.gitkeep
+data/forecasts/*
+!data/forecasts/.gitkeep
+data/future_forecast/*
+!data/future_forecast/.gitkeep
+*.duckdb
+*.duckdb.wal
+*.parquet
+models/**/*.pt
+models/**/*.txt
+models/**/*.pkl
 
 # Machine Learning Models & Caches
 *.pkl
@@ -83,3 +103,4 @@ scratch/
 # Python cache
 .mypy_cache/
 .ruff_cache/
+powershell.cmd

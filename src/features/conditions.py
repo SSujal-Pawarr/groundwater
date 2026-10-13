@@ -79,6 +79,26 @@ def _compute_expanding_percentile(group_df: pd.DataFrame, val_col: str, min_hist
     return out_df
 
 
+def _compute_grouped_percentiles(
+    df: pd.DataFrame,
+    group_columns: list[str],
+    val_col: str,
+    min_history: int,
+) -> pd.DataFrame:
+    """Apply the expanding calculation per group while retaining group columns.
+
+    Iterating groups avoids pandas-version changes to ``groupby.apply`` that can
+    remove grouping columns from the returned frame.
+    """
+    results = [
+        _compute_expanding_percentile(group, val_col=val_col, min_history=min_history)
+        for _, group in df.groupby(group_columns, sort=False, dropna=False)
+    ]
+    if not results:
+        return df.assign(percentile=np.nan, historical_sample_count=0)
+    return pd.concat(results).sort_index()
+
+
 def _assign_condition_state(percentile: float) -> str:
     """
     Maps a percentile [0.0, 100.0] to a neutral statistical condition state.
@@ -116,14 +136,12 @@ def compute_india_conditions(df: pd.DataFrame, min_history: int = DEFAULT_MIN_HI
     df_out = df_out.sort_values([site_col, season_col, "_parsed_date"]).reset_index(drop=True)
     
     # Compute percentiles
-    # Pandas >= 2.2 requires include_groups=False if grouping columns are dropped in the apply, 
-    # but we just return the dataframe so include_groups=False is safer to silence the warning.
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter(action='ignore', category=FutureWarning)
-        processed = df_out.groupby([site_col, season_col], group_keys=False).apply(
-            _compute_expanding_percentile, val_col=val_col, min_history=min_history
-        )
+    processed = _compute_grouped_percentiles(
+        df_out,
+        group_columns=[site_col, season_col],
+        val_col=val_col,
+        min_history=min_history,
+    )
     
     processed["condition_state"] = processed["percentile"].apply(_assign_condition_state)
     processed["historical_reference_group"] = processed[season_col]
@@ -155,12 +173,12 @@ def compute_maharashtra_conditions(df: pd.DataFrame, min_history: int = DEFAULT_
     # Must sort chronologically
     df_out = df_out.sort_values([site_col, "_month", "_parsed_ts"]).reset_index(drop=True)
     
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter(action='ignore', category=FutureWarning)
-        processed = df_out.groupby([site_col, "_month"], group_keys=False).apply(
-            _compute_expanding_percentile, val_col=val_col, min_history=min_history
-        )
+    processed = _compute_grouped_percentiles(
+        df_out,
+        group_columns=[site_col, "_month"],
+        val_col=val_col,
+        min_history=min_history,
+    )
     
     processed["condition_state"] = processed["percentile"].apply(_assign_condition_state)
     processed["condition_method_version"] = CONDITION_VERSION

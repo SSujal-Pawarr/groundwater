@@ -1,56 +1,125 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { fetchIndiaSites, fetchMHSites } from './services/api';
-import type { CandidateSite, BBox } from './services/api';
-import { MapView } from './components/MapView';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertCircle, Loader2, Search, X } from 'lucide-react';
+import { AlertCenter, SAMPLE_ALERTS, type AlertRecord } from './components/AlertCenter';
 import { InvestigationPanel } from './components/InvestigationPanel';
+import { Layout, type DashboardTab } from './components/Layout';
+import { MapView } from './components/MapView';
+import { PredictiveAnalytics } from './components/PredictiveAnalytics';
+import { AdvancedForecastTab } from './components/AdvancedForecastTab';
+import { MethodologyTab } from './components/MethodologyTab';
+import { fetchIndiaSites, fetchMHSites } from './services/api';
+import type { BBox, CandidateSite } from './services/api';
 
-import { Waves, Loader2, Search, X as XIcon, AlertCircle } from 'lucide-react';
 
 function App() {
-  const [dataset, setDataset] = useState<'india' | 'maharashtra'>('india');
+  const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+  const [dataset, setDataset] = useState<'india' | 'maharashtra'>('maharashtra');
   const [sites, setSites] = useState<CandidateSite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [bounds, setBounds] = useState<BBox | undefined>();
   const [selectedSite, setSelectedSite] = useState<CandidateSite | null>(null);
-
-  // Filter state — only using fields the API actually supports
-  const [stateFilter, setStateFilter] = useState('');       // India: ?state=
-  const [districtFilter, setDistrictFilter] = useState(''); // MH: ?district=
-  const [searchText, setSearchText] = useState('');         // Client-side site ID search
-
+  const [stateFilter, setStateFilter] = useState('');
+  const [districtFilter, setDistrictFilter] = useState('');
+  const [searchText, setSearchText] = useState('');
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadSites = useCallback(async (
     currentDataset: 'india' | 'maharashtra',
     currentBounds?: BBox,
     currentState?: string,
-    currentDistrict?: string
+    currentDistrict?: string,
   ) => {
     try {
       setLoading(true);
       setError(null);
-
       const data = currentDataset === 'india'
         ? await fetchIndiaSites(currentBounds, currentState || undefined)
         : await fetchMHSites(currentBounds, currentDistrict || undefined);
-
       setSites(data);
-    } catch {
-      setError('Failed to fetch sites. Is the backend running?');
+    } catch (loadError) {
+      const message = loadError instanceof Error ? loadError.message : '';
+      setError(message === 'Failed to fetch'
+        ? 'Failed to fetch sites. Is the backend running?'
+        : `Failed to fetch sites. ${message || 'Is the backend running?'}`);
       setSites([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Load on dataset or filter change
   useEffect(() => {
-    setSelectedSite(null);
     loadSites(dataset, bounds, stateFilter, districtFilter);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataset, stateFilter, districtFilter]);
+  }, [dataset, stateFilter, districtFilter, loadSites]);
+
+  // Check URL parameters on mount (e.g., when launched from external link or new tab)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      const siteParam = params.get('site');
+      const districtParam = params.get('district');
+      if (tabParam === 'map') {
+        setActiveTab('map');
+        setDataset('maharashtra');
+        if (districtParam) setDistrictFilter(districtParam);
+        if (siteParam) {
+          const matchedAlert = SAMPLE_ALERTS.find(a => a.candidate_site_id === siteParam || a.id === siteParam);
+          setSelectedSite({
+            candidate_site_id: siteParam,
+            station_name: matchedAlert?.stationName || matchedAlert?.location || siteParam,
+            district: districtParam || matchedAlert?.district || 'Maharashtra',
+            state: 'Maharashtra',
+            latitude: matchedAlert?.lat ?? 19.5,
+            longitude: matchedAlert?.lon ?? 75.5,
+            alert_event_state: 'CRITICAL_STATISTICAL_DEVIATION',
+            condition_state: 'EXTREMELY_LOW',
+          });
+        }
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
+  }, []);
+
+  const handleAlertSelect = useCallback((alert: AlertRecord, openNewTab?: boolean) => {
+    if (openNewTab) {
+      const siteParam = alert.candidate_site_id || alert.id;
+      const url = `${window.location.origin}${window.location.pathname}?tab=map&site=${encodeURIComponent(siteParam)}&district=${encodeURIComponent(alert.district || '')}`;
+      window.open(url, '_blank');
+      return;
+    }
+    setActiveTab('map');
+    setDataset('maharashtra');
+    if (alert.district) {
+      setDistrictFilter(alert.district);
+    }
+    const matched = sites.find(s =>
+      s.candidate_site_id === alert.candidate_site_id ||
+      (s.district && s.district.toLowerCase() === alert.district.toLowerCase())
+    );
+    if (matched) {
+      setSelectedSite(matched);
+    } else {
+      setSelectedSite({
+        candidate_site_id: alert.candidate_site_id,
+        station_name: alert.stationName || alert.location,
+        district: alert.district,
+        state: 'Maharashtra',
+        latitude: alert.lat,
+        longitude: alert.lon,
+        alert_event_state: alert.severity === 'Critical' ? 'CRITICAL_STATISTICAL_DEVIATION' : 'WARNING',
+        condition_state: alert.alertType === 'Flood' ? 'EXTREMELY_HIGH' : 'EXTREMELY_LOW',
+        drought_state: alert.alertType === 'Drought' ? 'SEVERE_DEFICIT' : 'NORMAL_TO_WET',
+        flood_potential_state: alert.alertType === 'Flood' ? 'HIGH' : 'LOW',
+        stress_state: alert.alertType === 'Severe Stress' ? 'SEVERE_STRESS' : 'NORMAL',
+      });
+    }
+  }, [sites]);
+
+  useEffect(() => () => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+  }, []);
 
   const handleBoundsChange = useCallback((newBounds: BBox) => {
     setBounds(newBounds);
@@ -60,7 +129,7 @@ function App() {
     }, 500);
   }, [dataset, loadSites, stateFilter, districtFilter]);
 
-  const handleDatasetToggle = (newDataset: 'india' | 'maharashtra') => {
+  const handleDatasetChange = (newDataset: 'india' | 'maharashtra') => {
     if (newDataset === dataset) return;
     setDataset(newDataset);
     setSelectedSite(null);
@@ -70,255 +139,315 @@ function App() {
     setSearchText('');
   };
 
-  const clearFilter = () => {
+  const handleTabChange = (tab: DashboardTab) => {
+    setActiveTab(tab);
+    if (tab !== 'map') setSelectedSite(null);
+  };
+
+  const clearFilters = () => {
     setStateFilter('');
     setDistrictFilter('');
     setSearchText('');
   };
 
-  // Client-side search by site ID or station name (only on already-loaded viewport results)
-  const displayedSites = searchText.trim()
-    ? sites.filter(s => {
-        const q = searchText.toLowerCase();
-        return (
-          s.candidate_site_id.toLowerCase().includes(q) ||
-          (s.station_name && s.station_name.toLowerCase().includes(q)) ||
-          (s.district && s.district.toLowerCase().includes(q))
-        );
-      })
-    : sites;
-
   const isIndia = dataset === 'india';
   const datasetLabel = isIndia ? 'Historical Candidate Sites' : 'Telemetry Stations';
   const activeFilter = isIndia ? stateFilter : districtFilter;
-  const filterPlaceholder = isIndia ? 'Filter by state…' : 'Filter by district…';
+  const filterPlaceholder = isIndia ? 'Filter by state' : 'Filter by district';
+  const displayedSites = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    if (!query) return sites;
+    return sites.filter(site => (
+      site.candidate_site_id.toLowerCase().includes(query)
+      || site.station_name?.toLowerCase().includes(query)
+      || site.district?.toLowerCase().includes(query)
+    ));
+  }, [sites, searchText]);
+  const mappedSiteCount = sites.filter(site => site.latitude != null && site.longitude != null).length;
+  const conditionSiteCount = sites.filter(site => site.condition_state != null).length;
+  const alertSiteCount = sites.filter(site => site.alert_event_state != null && site.alert_event_state !== 'NORMAL').length;
+  const apiStatus = loading ? 'loading' : error ? 'error' : 'online';
+
+  const headerActions = (
+    <div className="flex flex-wrap items-center gap-1 rounded-lg bg-glass-bg p-1" role="group" aria-label="Dataset selection">
+      <button
+        type="button"
+        aria-pressed={isIndia}
+        onClick={() => handleDatasetChange('india')}
+        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-glow ${isIndia
+          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-900/30'
+          : 'text-text-secondary hover:text-text-primary hover:bg-glass-bg-hover'
+        }`}
+      >
+        India Overview
+      </button>
+      <button
+        type="button"
+        aria-pressed={!isIndia}
+        onClick={() => handleDatasetChange('maharashtra')}
+        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-glow ${!isIndia
+          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-900/30'
+          : 'text-text-secondary hover:text-text-primary hover:bg-glass-bg-hover'
+        }`}
+      >
+        Maharashtra Telemetry
+      </button>
+    </div>
+  );
+
+  /* ── Stat card data ── */
+  const stats = [
+    { label: 'Sites returned', value: sites.length, gradient: 'from-emerald-500/20 to-teal-500/10', accent: 'text-emerald-400' },
+    { label: 'Mapped locations', value: mappedSiteCount, gradient: 'from-blue-500/20 to-cyan-500/10', accent: 'text-blue-400' },
+    { label: 'With condition data', value: conditionSiteCount, gradient: 'from-violet-500/20 to-purple-500/10', accent: 'text-violet-400' },
+    { label: 'Non-normal alerts', value: alertSiteCount, gradient: 'from-amber-500/20 to-orange-500/10', accent: 'text-amber-400' },
+  ];
 
   return (
-    <div className="flex flex-col h-screen bg-slate-950 text-slate-50 overflow-hidden">
-
-      {/* Header */}
-      <header className="h-14 border-b border-slate-800 bg-slate-900 flex items-center justify-between px-4 z-10 shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2.5">
-            <Waves className="w-5 h-5 text-cyan-400" aria-hidden="true" />
-            <div className="flex flex-col">
-              <h1 className="font-semibold text-xs tracking-widest text-slate-200 uppercase">
-                Groundwater Intelligence Command Center
-              </h1>
-              <span className="text-[10px] text-slate-400 font-medium">India Groundwater Intelligence & Early Warning Platform</span>
-            </div>
-          </div>
-          
-          <div className="h-8 w-px bg-slate-800 mx-2"></div>
-          
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${error ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
-              <span className="text-[10px] text-slate-400 font-medium uppercase">{error ? 'API ERROR' : 'API ONLINE'}</span>
-            </div>
-            <div className="text-[10px] text-slate-500 font-medium">
-              Data: {isIndia ? 'Historical / Periodic' : 'Telemetry / Historical'}
-            </div>
-          </div>
-        </div>
-
-        {/* Dataset switcher */}
-        <div
-          className="flex items-center bg-slate-950 rounded p-0.5 border border-slate-800"
-          role="tablist"
-          aria-label="Dataset selection"
-        >
-          <button
-            role="tab"
-            aria-selected={isIndia}
-            onClick={() => handleDatasetToggle('india')}
-            className={`px-3 py-1 text-xs font-medium rounded transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-              isIndia ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            India Overview
-          </button>
-          <button
-            role="tab"
-            aria-selected={!isIndia}
-            onClick={() => handleDatasetToggle('maharashtra')}
-            className={`px-3 py-1 text-xs font-medium rounded transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-              !isIndia ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Maharashtra Telemetry
-          </button>
-        </div>
-      </header>
-
-      {/* Main */}
-      <div className="flex flex-1 relative overflow-hidden">
-
-        {/* Left Sidebar */}
-        <aside
-          className="w-60 bg-slate-900 border-r border-slate-800 flex flex-col z-10 shrink-0"
-          aria-label="Site explorer"
-        >
-          {/* Sidebar header */}
-          <div className="px-3 pt-3 pb-2 border-b border-slate-800">
-            <div className="text-[10px] uppercase tracking-widest text-slate-500 font-medium mb-2">
-              {datasetLabel}
-            </div>
-
-            {/* API-backed filter */}
-            <div className="relative mb-2">
-              <input
-                type="text"
-                placeholder={filterPlaceholder}
-                value={activeFilter}
-                onChange={e => {
-                  if (isIndia) setStateFilter(e.target.value);
-                  else setDistrictFilter(e.target.value);
-                }}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    loadSites(dataset, bounds, stateFilter, districtFilter);
-                  }
-                }}
-                className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                aria-label={filterPlaceholder}
-              />
-              {activeFilter && (
-                <button
-                  onClick={() => {
-                    if (isIndia) setStateFilter(''); else setDistrictFilter('');
-                  }}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                  aria-label="Clear filter"
-                >
-                  <XIcon className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-
-            {/* Client-side text search */}
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600" aria-hidden="true" />
-              <input
-                type="text"
-                placeholder="Search ID / name…"
-                value={searchText}
-                onChange={e => setSearchText(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded pl-6 pr-2.5 py-1 text-xs text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                aria-label="Search site ID or station name"
-              />
-              {searchText && (
-                <button
-                  onClick={() => setSearchText('')}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                  aria-label="Clear search"
-                >
-                  <XIcon className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-
-            {(activeFilter || searchText) && (
+    <Layout
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
+      apiStatus={apiStatus}
+      headerActions={headerActions}
+    >
+      {/* ═══════════════════════════════════════════════════════════
+          OVERVIEW TAB
+         ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'overview' && (
+        <section className="h-full overflow-y-auto bg-surface-base" aria-label="Overview dashboard">
+          <div className="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8 animate-fade-in">
+            {/* Page header */}
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">National groundwater monitoring</p>
+                <h2 className="font-heading mt-1 text-2xl font-bold text-text-primary">Overview Dashboard</h2>
+                <p className="mt-1 max-w-2xl text-sm text-text-secondary">
+                  Deterministic site intelligence for {isIndia ? 'historical India observations' : 'Maharashtra telemetry'}.
+                </p>
+              </div>
               <button
-                onClick={clearFilter}
-                className="mt-1.5 text-[10px] text-slate-500 hover:text-slate-300 underline underline-offset-2"
+                type="button"
+                onClick={() => setActiveTab('map')}
+                className="btn-primary rounded-lg px-4 py-2 text-sm"
               >
-                Clear all filters
+                Open geospatial map
               </button>
-            )}
-          </div>
+            </div>
 
-          {/* Viewport summary */}
-          <div className="px-3 py-2 border-b border-slate-800/50 bg-slate-950/30">
-            {loading ? (
-              <div className="flex items-center gap-1.5 text-slate-600">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                <span className="text-xs">Loading…</span>
+            {/* Error banner */}
+            {error && (
+              <div className="flex items-start gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 animate-fade-in" role="alert">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" aria-hidden="true" />
+                <p>{error}</p>
               </div>
-            ) : error ? (
-              <div className="flex items-center gap-1.5 text-red-400 text-xs" role="alert">
-                <AlertCircle className="w-3 h-3 shrink-0" />
-                <span>{error}</span>
+            )}
+
+            {/* Alert Center */}
+            <AlertCenter onSelectAlert={handleAlertSelect} />
+
+            {/* ── Stat cards ── */}
+            <section aria-labelledby="coverage-heading">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 id="coverage-heading" className="font-heading text-sm font-semibold text-text-primary">Dataset coverage</h3>
+                {loading && <span className="text-xs text-text-muted animate-status-pulse">Updating…</span>}
               </div>
-            ) : (
-              <div className="text-xs text-slate-500">
-                <span className="text-slate-300 font-semibold tabular-nums">{displayedSites.length}</span>
-                {searchText && sites.length !== displayedSites.length && (
-                  <span> of {sites.length}</span>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {stats.map((stat, i) => (
+                  <div
+                    key={stat.label}
+                    className={`glass-panel rounded-xl p-4 hover-lift stagger-${i + 1} animate-fade-in`}
+                  >
+                    <div className={`absolute inset-0 rounded-xl bg-gradient-to-br ${stat.gradient} opacity-50`} />
+                    <div className="relative">
+                      <dt className="text-xs text-text-muted">{stat.label}</dt>
+                      <dd className={`mt-1 font-heading text-2xl font-bold tabular-nums ${stat.accent}`}>{stat.value}</dd>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Data context */}
+            <section className="border-t border-glass-border pt-5" aria-labelledby="data-context-heading">
+              <h3 id="data-context-heading" className="font-heading text-sm font-semibold text-text-primary">Data context</h3>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-text-secondary">
+                {isIndia
+                  ? 'India observations are historical and periodic. Candidate-site identifiers are analytical groupings; they are not verified physical station identities.'
+                  : 'Maharashtra records are telemetry-oriented observations. Persistence forecasts describe the next valid observation and should not be interpreted as an official warning.'}
+              </p>
+            </section>
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          MAP TAB
+         ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'map' && (
+        <section className="flex min-h-0 flex-1 bg-surface-base" aria-label="Geospatial map">
+          {/* ── Sidebar ── */}
+          <aside className="z-1 flex w-48 shrink-0 flex-col border-r border-glass-border bg-surface-raised/80 backdrop-blur-xl sm:w-64 lg:w-72" aria-label="Site explorer">
+            <div className="border-b border-glass-border p-4">
+              <h2 className="font-heading text-xs font-semibold uppercase tracking-wider text-text-muted">{datasetLabel}</h2>
+              <label className="sr-only" htmlFor="region-filter">{filterPlaceholder}</label>
+              <div className="relative mt-3">
+                <input
+                  id="region-filter"
+                  type="text"
+                  placeholder={filterPlaceholder}
+                  value={activeFilter}
+                  onChange={event => isIndia ? setStateFilter(event.target.value) : setDistrictFilter(event.target.value)}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter') loadSites(dataset, bounds, stateFilter, districtFilter);
+                  }}
+                  className="input-dark w-full rounded-lg px-3 py-2 pr-8 text-sm"
+                />
+                {activeFilter && (
+                  <button
+                    type="button"
+                    onClick={() => isIndia ? setStateFilter('') : setDistrictFilter('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+                    aria-label="Clear region filter"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 )}
-                <span> {isIndia ? 'site' : 'station'}{displayedSites.length !== 1 ? 's' : ''} in view</span>
               </div>
-            )}
-          </div>
+              <label className="sr-only" htmlFor="site-search">Search sites</label>
+              <div className="relative mt-2">
+                <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" aria-hidden="true" />
+                <input
+                  id="site-search"
+                  type="search"
+                  placeholder="Search ID, station, district"
+                  value={searchText}
+                  onChange={event => setSearchText(event.target.value)}
+                  className="input-dark w-full rounded-lg py-2 pl-8 pr-3 text-sm"
+                />
+              </div>
+              {(activeFilter || searchText) && (
+                <button type="button" onClick={clearFilters} className="mt-2 text-xs font-medium text-emerald-400 underline underline-offset-2 hover:text-emerald-300 transition-colors">
+                  Clear filters
+                </button>
+              )}
+            </div>
 
-          {/* Site list */}
-          <div className="flex-1 overflow-y-auto" role="list" aria-label="Sites in current viewport">
-            {!loading && !error && displayedSites.length > 0 ? (
-              displayedSites.slice(0, 200).map(site => (
+            <div className="border-b border-glass-border px-4 py-2 text-xs text-text-muted" aria-live="polite">
+              {loading ? (
+                <span className="inline-flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-400" /> Loading sites</span>
+              ) : error ? (
+                <span className="text-red-400">Site data unavailable. See map details.</span>
+              ) : (
+                <><strong className="font-semibold text-text-primary">{displayedSites.length}</strong> {isIndia ? 'sites' : 'stations'} in view</>
+              )}
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto" role="list" aria-label="Sites in current view">
+              {!loading && !error && displayedSites.length > 0 ? displayedSites.slice(0, 200).map(site => (
                 <button
                   key={site.candidate_site_id}
+                  type="button"
                   role="listitem"
                   onClick={() => setSelectedSite(site)}
-                  className={`w-full text-left px-3 py-2 border-b border-slate-800/40 hover:bg-slate-800/50 transition-colors focus:outline-none focus:bg-slate-800/50 ${
-                    selectedSite?.candidate_site_id === site.candidate_site_id
-                      ? 'bg-blue-900/30 border-l-2 border-l-blue-500'
-                      : ''
-                  }`}
                   aria-pressed={selectedSite?.candidate_site_id === site.candidate_site_id}
                   aria-label={`Select site ${site.candidate_site_id}`}
+                  className={`
+                    w-full border-b border-glass-border px-4 py-3 text-left transition-all duration-150
+                    hover:bg-glass-bg-hover focus-visible:outline-none focus-glow
+                    ${selectedSite?.candidate_site_id === site.candidate_site_id
+                      ? 'border-l-2 border-l-emerald-400 bg-emerald-500/10'
+                      : ''
+                    }
+                  `}
                 >
-                  <div
-                    className="text-xs font-mono text-slate-300 truncate"
-                    title={site.candidate_site_id}
-                  >
-                    {site.candidate_site_id}
-                  </div>
-                  {site.station_name && (
-                    <div className="text-[10px] text-slate-500 truncate mt-0.5">{site.station_name}</div>
-                  )}
-                  {(site.district || site.state) && (
-                    <div className="text-[10px] text-slate-600 truncate">
-                      {[site.district, site.state].filter(Boolean).join(', ')}
-                    </div>
-                  )}
+                  <span className="block truncate font-mono text-xs font-medium text-text-primary">{site.candidate_site_id}</span>
+                  {site.station_name && <span className="mt-1 block truncate text-xs text-text-secondary">{site.station_name}</span>}
+                  {(site.district || site.state) && <span className="block truncate text-xs text-text-muted">{[site.district, site.state].filter(Boolean).join(', ')}</span>}
                 </button>
-              ))
-            ) : !loading && !error ? (
-              <div className="p-3 text-xs text-slate-600 italic">
-                {searchText || activeFilter ? 'No sites match the current filter.' : 'Move the map to explore sites.'}
-              </div>
-            ) : null}
-            {!loading && displayedSites.length > 200 && (
-              <div className="px-3 py-2 text-[10px] text-slate-600 italic border-t border-slate-800/40">
-                Showing first 200 of {displayedSites.length}. Zoom in for more precise results.
+              )) : !loading && !error ? (
+                <p className="px-4 py-5 text-sm text-text-muted">
+                  {searchText || activeFilter ? 'No sites match these filters.' : 'No sites are available in this view.'}
+                </p>
+              ) : null}
+              {!loading && displayedSites.length > 200 && (
+                <p className="border-t border-glass-border px-4 py-3 text-xs text-text-muted">Showing the first 200 sites. Zoom in to narrow the results.</p>
+              )}
+            </div>
+          </aside>
+
+          {/* ── Map area ── */}
+          <div className="relative min-w-0 flex-1 bg-surface-base">
+            <MapView
+              sites={sites}
+              dataset={dataset}
+              selectedSiteId={selectedSite?.candidate_site_id ?? null}
+              selectedSite={selectedSite}
+              onSiteSelect={setSelectedSite}
+              onBoundsChange={handleBoundsChange}
+            />
+            {!loading && (error || sites.length === 0) && (
+              <div className="pointer-events-none absolute inset-x-4 top-4 flex justify-center">
+                <div className="glass-panel max-w-lg rounded-xl px-4 py-3" role={error ? 'alert' : 'status'}>
+                  <h3 className="text-sm font-semibold text-text-primary">{error ? 'Site data unavailable' : 'No sites in this map view'}</h3>
+                  <p className="mt-1 text-xs leading-relaxed text-text-secondary">{error || 'Zoom out or move the map to explore monitoring sites.'}</p>
+                </div>
               </div>
             )}
+            {selectedSite && (
+              <InvestigationPanel
+                site={selectedSite}
+                dataset={dataset}
+                onClose={() => setSelectedSite(null)}
+                onReturnToOverview={() => setActiveTab('overview')}
+                onSelectAlertSite={siteId => {
+                  const alert = SAMPLE_ALERTS.find(a => a.candidate_site_id === siteId || a.id === siteId);
+                  if (alert) handleAlertSelect(alert, false);
+                }}
+              />
+            )}
           </div>
-        </aside>
+        </section>
+      )}
 
-        {/* Map */}
-        <div className="flex-1 relative">
-          <MapView
-            sites={sites}
-            dataset={dataset}
-            selectedSiteId={selectedSite?.candidate_site_id ?? null}
-            onSiteSelect={setSelectedSite}
-            onBoundsChange={handleBoundsChange}
-          />
-        </div>
+      {/* ═══════════════════════════════════════════════════════════
+          PREDICTIVE TAB
+         ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'predictive' && (
+        <section className="h-full overflow-y-auto bg-surface-base" aria-label="Predictive analytics">
+          <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 animate-fade-in">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">Model outputs</p>
+              <h2 className="font-heading mt-1 text-2xl font-bold text-text-primary">Predictive Analytics</h2>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-text-secondary">
+                Forecasts are site-specific statistical estimates. They are not official groundwater warnings or guarantees of future water supply.
+              </p>
+            </div>
 
-        {/* Investigation Drawer */}
-        {selectedSite && (
-          <InvestigationPanel
-            site={selectedSite}
-            dataset={dataset}
-            onClose={() => setSelectedSite(null)}
-          />
-        )}
-        
+            {error && <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300" role="alert">{error}</div>}
+            <PredictiveAnalytics dataset={dataset} initialSiteId={selectedSite?.candidate_site_id} />
+          </div>
+        </section>
+      )}
 
-      </div>
-    </div>
+      {/* ═══════════════════════════════════════════════════════════
+          ADVANCED TAB
+         ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'advanced' && (
+        <section className="h-full overflow-hidden bg-surface-base" aria-label="Advanced multi-model forecast">
+          <AdvancedForecastTab initialSiteId={selectedSite?.candidate_site_id} />
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          METHODOLOGY TAB
+         ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'methodology' && (
+        <section className="h-full overflow-y-auto bg-surface-base" aria-label="Methodology and model deep-dive">
+          <MethodologyTab />
+        </section>
+      )}
+    </Layout>
+
   );
 }
 

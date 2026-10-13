@@ -1,29 +1,137 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 @import "maplibre-gl/dist/maplibre-gl.css";
 
 @theme {
-  /* M6 Alert state colors — unchanged */
-  --color-alert-normal: #64748b;
-  --color-alert-watch: #fbbf24;
-  --color-alert-warning: #f97316;
-  --color-alert-critical: #ef4444;
-  --color-alert-quality: #9ca3af;
-  --color-alert-insufficient: #60a5fa;
-  --color-alert-gapped: #38bdf8;
+  /* ── Warm Ivory / Champagne Surface palette ── */
+  --color-surface-base: #FAF8F5;
+  --color-surface-raised: #FFFFFF;
+  --color-surface-overlay: #F5F1E8;
+  --color-surface-elevated: #ECE6D8;
 
-  --color-panel-bg: #0f172a;
-  --color-panel-border: #1e293b;
-  --color-panel-text: #f8fafc;
-  --color-panel-muted: #94a3b8;
+  /* ── Card & Glass tokens (Warm Light) ── */
+  --color-glass-bg: rgba(255, 255, 255, 0.88);
+  --color-glass-bg-hover: rgba(255, 255, 255, 0.98);
+  --color-glass-border: rgba(229, 224, 212, 0.85);
+  --color-glass-border-hover: rgba(209, 202, 188, 1);
+
+  /* ── Text palette (High-contrast slate) ── */
+  --color-text-primary: #1E293B;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748B;
+  --color-text-accent: #059669;
+
+  /* ── Vibrant multi-color accents ── */
+  --color-accent-emerald: #059669;
+  --color-accent-emerald-glow: rgba(5, 150, 105, 0.18);
+  --color-accent-blue: #2563EB;
+  --color-accent-blue-glow: rgba(37, 99, 235, 0.18);
+  --color-accent-amber: #D97706;
+  --color-accent-red: #DC2626;
+  --color-accent-red-glow: rgba(220, 38, 38, 0.18);
+  --color-accent-violet: #7C3AED;
+  --color-accent-teal: #0D9488;
+  --color-accent-gold: #B45309;
+
+  /* ── Alert state colors (Light theme friendly) ── */
+  --color-alert-normal: #475569;
+  --color-alert-watch: #D97706;
+  --color-alert-warning: #EA580C;
+  --color-alert-critical: #DC2626;
+  --color-alert-quality: #64748B;
+  --color-alert-insufficient: #2563EB;
+  --color-alert-gapped: #0284C7;
+
+  --color-panel-bg: #FFFFFF;
+  --color-panel-border: #E5E0D4;
+  --color-panel-text: #1E293B;
+  --color-panel-muted: #64748B;
 }
 
+/* ── Keyframes ── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px rgba(5, 150, 105, 0.2); }
+  50% { box-shadow: 0 0 14px rgba(5, 150, 105, 0.45); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.15); }
+}
+
+@keyframes border-glow {
+  0%, 100% { border-color: rgba(220, 38, 38, 0.4); }
+  50% { border-color: rgba(220, 38, 38, 0.85); }
+}
+
+/* ── Utility classes ── */
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out both;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out both;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+.animate-status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+.animate-border-glow {
+  animation: border-glow 2s ease-in-out infinite;
+}
+
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+
+/* ── Warm Glass & Card Shorthand ── */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(229, 224, 212, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 4px rgba(27, 31, 35, 0.04), 0 4px 12px rgba(27, 31, 35, 0.02);
+}
+
+.glass-panel-hover:hover {
+  background: #FFFFFF;
+  border-color: rgba(209, 202, 188, 1);
+  box-shadow: 0 4px 16px rgba(27, 31, 35, 0.08);
+}
+
+/* ── Global base ── */
 body {
   margin: 0;
   padding: 0;
-  background-color: #020617;
-  color: #f8fafc;
+  background-color: #FAF8F5;
+  color: #1E293B;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 13px;
   overflow: hidden;
@@ -31,22 +139,114 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Mono font for IDs */
+/* ── Typography ── */
+.font-heading {
+  font-family: 'Outfit', 'Inter', sans-serif;
+}
+
 .font-mono {
   font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #334155; }
-
-/* MapLibre attribution compact */
-.maplibregl-ctrl-attrib {
-  font-size: 9px !important;
-  background: rgba(2, 6, 23, 0.7) !important;
+/* ── Gradient text (Rich Warm & Cool) ── */
+.text-gradient-emerald {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* Remove Carto logo */
+.text-gradient-blue {
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-amber {
+  background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Scrollbar (Warm clean) ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.25); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.45); }
+
+/* ── MapLibre overrides ── */
+.maplibregl-ctrl-attrib {
+  font-size: 9px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #64748B !important;
+  border: 1px solid rgba(229, 224, 212, 0.8) !important;
+  backdrop-filter: blur(6px) !important;
+}
 .maplibregl-ctrl-logo { display: none !important; }
+.maplibregl-popup-content {
+  background: #FFFFFF !important;
+  color: #1E293B !important;
+  border: 1px solid rgba(229, 224, 212, 0.95) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+}
+.maplibregl-popup-tip {
+  border-top-color: #FFFFFF !important;
+}
+
+/* ── Focus ring ── */
+.focus-glow:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.4), 0 0 10px rgba(5, 150, 105, 0.15);
+}
+
+/* ── Input style (Warm Light) ── */
+.input-dark, .input-light {
+  background: #FFFFFF;
+  border: 1px solid #E5E0D4;
+  color: #1E293B;
+  transition: all 0.2s ease;
+}
+.input-dark::placeholder, .input-light::placeholder {
+  color: #94A3B8;
+}
+.input-dark:focus, .input-light:focus {
+  outline: none;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+  background: #FFFFFF;
+}
+
+/* ── Button styles ── */
+.btn-primary {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: white;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-primary:hover {
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Hover lift ── */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(27, 31, 35, 0.08);
+}

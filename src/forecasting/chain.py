@@ -42,7 +42,7 @@ STEP_FEATURES = {
 PLAUSIBLE = {"maharashtra": (-100.0, 50.0), "india": (0.0, 150.0)}       # M3 quality thresholds
 BACKTEST_CUTOFF = {"maharashtra": "2026-03-15", "india": None}           # None -> cfg.test_start
 BACKTEST_K = {"maharashtra": 2, "india": 4}
-MAX_STEPS = {"maharashtra": 8, "india": 8}
+MAX_STEPS = {"maharashtra": 36, "india": 36}   # support up to ~3 years ahead
 BACKTEST_MAX_ORIGINS = 120_000
 LABEL = "ESTIMATED_WITHOUT_RECENT_DATA"
 

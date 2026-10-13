@@ -1,4 +1,7 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.hostname}:8000/api/v1`
+    : 'http://localhost:8000/api/v1');
 
 export type AlertState = 
   | 'NORMAL' 
@@ -83,6 +86,15 @@ export interface BBox {
   max_lng: number;
 }
 
+const responseError = async (res: Response, fallback: string): Promise<Error> => {
+  try {
+    const body = await res.json() as { detail?: string };
+    return new Error(body.detail || fallback);
+  } catch {
+    return new Error(fallback);
+  }
+};
+
 export const fetchIndiaSites = async (bbox?: BBox, state?: string, limit=5000): Promise<CandidateSite[]> => {
   let url = `${API_BASE_URL}/india/candidate-sites?limit=${limit}`;
   if (bbox) {
@@ -90,7 +102,7 @@ export const fetchIndiaSites = async (bbox?: BBox, state?: string, limit=5000): 
   }
   if (state) url += `&state=${encodeURIComponent(state)}`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch India sites');
+  if (!res.ok) throw await responseError(res, 'Failed to fetch India sites');
   return res.json();
 };
 
@@ -101,7 +113,7 @@ export const fetchMHSites = async (bbox?: BBox, district?: string, limit=5000): 
   }
   if (district) url += `&district=${encodeURIComponent(district)}`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch MH sites');
+  if (!res.ok) throw await responseError(res, 'Failed to fetch Maharashtra sites');
   return res.json();
 };
 
@@ -171,8 +183,8 @@ export interface FutureForecast {
   target_date: string;
   predicted_water_level: number;
   predicted_change: number;
-  predicted_lower_80: number;
-  predicted_upper_80: number;
+  predicted_lower_80: number | null;
+  predicted_upper_80: number | null;
   predicted_percentile_vs_history: number | null;
   current_condition_state: string;
   predicted_condition_state: string;
@@ -181,6 +193,13 @@ export interface FutureForecast {
   water_level_unit: string;
   model_version: string;
   data_through: string;
+  forecast_source?: 'direct_m17' | 'chained_fallback';
+  forecast_method?: 'chained_xgboost' | 'persistence_fallback';
+  estimate_label?: string;
+  forecast_reason?: string;
+  requested_target_date?: string;
+  predicted_for_date?: string;
+  warnings?: string[];
 }
 
 /** Resolves to null when no forecast exists for the site (HTTP 404) so the UI can show a neutral message. */
@@ -230,4 +249,94 @@ export const fetchChainedForecast = async (siteId: string, region: 'india' | 'ma
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('Failed to fetch chained forecast');
   return res.json();
+};
+
+export interface RegressionForecastPoint {
+  date: string;
+  water_level: number;
+}
+
+export interface RegressionForecastLocation {
+  candidate_site_id: string;
+  station_name: string | null;
+  district: string | null;
+  state: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  origin_water_level: number;
+  forecast_origin_date: string;
+  requested_target_date: string;
+  predicted_for_date: string;
+  predicted_water_level: number;
+  predicted_change: number;
+  predicted_lower_80: number | null;
+  predicted_upper_80: number | null;
+  method: 'chained_xgboost' | 'persistence_fallback';
+  method_reason: string;
+  n_steps: number;
+  step_months: number;
+  predicted_condition_state: string;
+  predicted_state_confidence: number | null;
+  predicted_condition_probabilities: Record<string, number | null>;
+  trained_regression_water_level: number | null;
+  direct_m17_water_level: number | null;
+  warnings: string[];
+  path_levels: { date: string; level: number }[];
+}
+
+export interface SelectedRegressionForecast extends RegressionForecastLocation {
+  forecast_origin_date: string;
+  last_observation_date: string;
+  target_date: string;
+  history: RegressionForecastPoint[];
+}
+
+export interface ProjectForecastModelAvailability {
+  available: boolean;
+  target_date?: string;
+  trained_target_date?: string;
+  model_file?: string;
+}
+
+export interface MaharashtraRegressionForecast {
+  region: 'maharashtra';
+  target_date: string;
+  data_through: string;
+  max_target_date: string;
+  step_months: number;
+  source_age_days: number;
+  water_level_unit: string;
+  locations: RegressionForecastLocation[];
+  selected_location: SelectedRegressionForecast | null;
+  models: {
+    chained_m17: ProjectForecastModelAvailability;
+    trained_gradient_boosting: ProjectForecastModelAvailability;
+    direct_m17: ProjectForecastModelAvailability;
+  };
+  chain_backtest: Record<string, unknown>;
+  unsupported_targets: Record<string, string>;
+}
+
+const API_ROOT_URL = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
+
+export const fetchMaharashtraRegressionForecast = async (
+  targetDate?: string,
+  candidateSiteId?: string,
+): Promise<MaharashtraRegressionForecast> => {
+  const params = new URLSearchParams();
+  if (targetDate) params.set('target_date', targetDate);
+  if (candidateSiteId) params.set('candidate_site_id', candidateSiteId);
+  const query = params.size > 0 ? `?${params.toString()}` : '';
+  const response = await fetch(`${API_ROOT_URL}/api/forecast/maharashtra${query}`);
+  if (!response.ok) {
+    let detail = 'Failed to fetch Maharashtra regression forecast';
+    try {
+      const body = await response.json() as { detail?: string };
+      detail = body.detail || detail;
+    } catch {
+      // Keep the fallback message when the API response is not JSON.
+    }
+    throw new Error(detail);
+  }
+  return response.json();
 };

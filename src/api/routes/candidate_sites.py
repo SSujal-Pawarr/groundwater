@@ -1,9 +1,22 @@
 from fastapi import APIRouter, Query, Path, HTTPException
+from pathlib import Path as FilePath
 from typing import List, Optional
 from src.api.dal import GroundwaterDAL
 
 router = APIRouter(prefix="/api/v1")
 dal = GroundwaterDAL()
+
+
+def _require_dataset(path: FilePath):
+    if not path.exists():
+        relative_path = path.relative_to(dal.project_root)
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"Dataset unavailable: {relative_path}. Restore this normalized Parquet file. "
+                "If alert artifacts are available, run `python scripts/rebuild_processed_from_alerts.py`."
+            ),
+        )
 
 # India Candidate Sites
 @router.get("/india/candidate-sites", tags=["India"])
@@ -17,6 +30,7 @@ def list_india_candidate_sites(
     max_lng: Optional[float] = None
 ):
     """List India candidate sites (analytical groupings)."""
+    _require_dataset(dal.india_m3_path)
     return dal.get_india_candidate_sites(
         limit=limit, offset=offset, state=state,
         min_lat=min_lat, max_lat=max_lat, min_lng=min_lng, max_lng=max_lng
@@ -70,6 +84,7 @@ def list_mh_candidate_sites(
     max_lng: Optional[float] = None
 ):
     """List Maharashtra candidate sites and station names."""
+    _require_dataset(dal.mh_m3_path)
     return dal.get_mh_candidate_sites(
         limit=limit, offset=offset, district=district,
         min_lat=min_lat, max_lat=max_lat, min_lng=min_lng, max_lng=max_lng
